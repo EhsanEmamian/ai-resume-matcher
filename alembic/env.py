@@ -7,7 +7,7 @@ from app.config import settings
 from app.database import Base
 from app.jobs.models import JobPosting  # noqa: F401
 from app.resume.models import Resume  # noqa: F401
-
+from app.matching.models import MatchResult  # noqa: F401
 config = context.config
 
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
