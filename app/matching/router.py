@@ -1,9 +1,10 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.exceptions import NotFoundError
 from app.matching import service
 from app.matching.schemas import MatchListResponse
 
@@ -24,10 +25,7 @@ def generate_matches(
         items = service.generate_matches_for_resume(db, resume_id)
         return MatchListResponse(total=len(items), items=items)
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(exc),
-        ) from exc
+        raise NotFoundError("Resume", str(resume_id)) from exc
 
 
 @router.get(
@@ -51,7 +49,4 @@ def list_matches(
         )
         return MatchListResponse(total=total, items=items)
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(exc),
-        ) from exc
+        raise NotFoundError("Resume", str(resume_id)) from exc

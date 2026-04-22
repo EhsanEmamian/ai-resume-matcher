@@ -1,6 +1,8 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 
 from app.config import settings
+from app.exceptions import AppError
 from app.jobs.router import router as jobs_router
 from app.matching.router import router as matching_router
 from app.resume.router import router as resume_router
@@ -13,6 +15,26 @@ def create_app() -> FastAPI:
         docs_url="/docs",
         redoc_url="/redoc",
     )
+
+    @app.exception_handler(AppError)
+    async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "error": type(exc).__name__,
+                "detail": exc.message,
+            },
+        )
+
+    @app.exception_handler(Exception)
+    async def unhandled_error_handler(request: Request, exc: Exception) -> JSONResponse:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "InternalServerError",
+                "detail": "An unexpected error occurred.",
+            },
+        )
 
     app.include_router(jobs_router, prefix="/jobs", tags=["Jobs"])
     app.include_router(resume_router, prefix="/resumes", tags=["Resumes"])

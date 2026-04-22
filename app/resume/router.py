@@ -1,10 +1,10 @@
 import uuid
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, UploadFile, status
 from sqlalchemy.orm import Session
 
-from app.ai.resume_parser import ResumeParsingError
 from app.database import get_db
+from app.exceptions import AIParsingError, InvalidFileError, NotFoundError
 from app.resume import service
 from app.resume.pdf_extractor import PDFExtractionError
 from app.resume.schemas import ResumeParseResponse, ResumeRead, ResumeUploadResponse
@@ -26,15 +26,9 @@ def upload_resume(
         resume = service.create_resume(db, file)
         return resume
     except service.ResumeUploadError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(exc),
-        ) from exc
+        raise InvalidFileError(str(exc)) from exc
     except PDFExtractionError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(exc),
-        ) from exc
+        raise InvalidFileError(str(exc)) from exc
 
 
 @router.get(
@@ -48,10 +42,7 @@ def get_resume(
 ) -> ResumeRead:
     resume = service.get_resume(db, resume_id)
     if resume is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Resume with id '{resume_id}' not found.",
-        )
+        raise NotFoundError("Resume", str(resume_id))
     return resume
 
 
@@ -71,15 +62,8 @@ def parse_resume(
             resume_id=resume_id,
             profile=profile,
         )
-    except ResumeParsingError as exc:
+    except Exception as exc:
         message = str(exc)
         if "not found" in message.lower():
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=message,
-            ) from exc
-
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=message,
-        ) from exc
+            raise NotFoundError("Resume", str(resume_id)) from exc
+        raise AIParsingError(message) from exc

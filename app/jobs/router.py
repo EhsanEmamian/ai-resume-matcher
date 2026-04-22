@@ -1,9 +1,10 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.exceptions import NotFoundError
 from app.jobs import service
 from app.jobs.schemas import JobPostingCreate, JobPostingList, JobPostingRead
 
@@ -49,10 +50,7 @@ def get_job(
 ) -> JobPostingRead:
     job = service.get_job(db, job_id)
     if job is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Job with id '{job_id}' not found.",
-        )
+        raise NotFoundError("Job", str(job_id))
     return job
 
 
@@ -67,8 +65,5 @@ def delete_job(
 ) -> None:
     job = service.get_job(db, job_id)
     if job is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Job with id '{job_id}' not found.",
-        )
+        raise NotFoundError("Job", str(job_id))
     service.delete_job(db, job)
