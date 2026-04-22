@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import DateTime, Float, ForeignKey, String, UniqueConstraint
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -31,6 +31,8 @@ class MatchResult(Base):
     )
     score: Mapped[float] = mapped_column(Float, nullable=False)
     reason: Mapped[str] = mapped_column(String(500), nullable=False)
+    score_breakdown: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    matched_skills: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
     matched_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

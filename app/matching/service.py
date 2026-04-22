@@ -28,25 +28,23 @@ def _skills_overlap_score(
     profile_technologies: list[str],
     profile_skills: list[str],
     job_required_skills: list[str],
-) -> tuple[float, str]:
+) -> tuple[float, str, list[str]]:
     profile_items = _normalize_list(profile_technologies + profile_skills)
     job_items = _normalize_list(job_required_skills)
 
     if not job_items:
-        return 0.2, "Job has no required skills listed, so a neutral base score was applied."
+        return 0.2, "Job has no required skills listed, so a neutral base score was applied.", []
 
-    overlap = profile_items & job_items
+    overlap = sorted(profile_items & job_items)
     ratio = len(overlap) / len(job_items)
-
     score = round(ratio * 0.7, 4)
 
     if overlap:
-        overlap_text = ", ".join(sorted(overlap))
-        reason = f"Matched skills/technologies: {overlap_text}."
+        reason = f"Matched skills/technologies: {', '.join(overlap)}."
     else:
         reason = "No direct skill overlap found."
 
-    return score, reason
+    return score, reason, overlap
 
 
 def _remote_bonus(job: JobPosting) -> tuple[float, str | None]:
@@ -55,31 +53,34 @@ def _remote_bonus(job: JobPosting) -> tuple[float, str | None]:
     return 0.0, None
 
 
-def calculate_match_score(profile: ResumeProfile, job: JobPosting) -> tuple[float, str]:
-    total_score = 0.0
+def calculate_match_score(profile: ResumeProfile, job: JobPosting) -> tuple[float, str, dict, list[str]]:
     reasons: list[str] = []
 
-    skills_score, skills_reason = _skills_overlap_score(
+    skill_score, skill_reason, matched_skills = _skills_overlap_score(
         profile.technologies,
         profile.skills,
         job.required_skills,
     )
-    total_score += skills_score
-    reasons.append(skills_reason)
+    reasons.append(skill_reason)
 
     role_score, role_reason = _role_overlap_score(profile.suggested_roles, job.title)
-    total_score += role_score
     if role_reason:
         reasons.append(role_reason)
 
     remote_score, remote_reason = _remote_bonus(job)
-    total_score += remote_score
     if remote_reason:
         reasons.append(remote_reason)
 
-    total_score = min(round(total_score, 4), 1.0)
+    final_score = min(round(skill_score + role_score + remote_score, 4), 1.0)
 
-    return total_score, " ".join(reasons)
+    breakdown = {
+        "skill_overlap_score": skill_score,
+        "role_overlap_score": role_score,
+        "remote_bonus": remote_score,
+        "final_score": final_score,
+    }
+
+    return final_score, " ".join(reasons), breakdown, matched_skills
 
 
 def generate_matches_for_resume(db: Session, resume_id: uuid.UUID) -> list[MatchResult]:
@@ -98,13 +99,15 @@ def generate_matches_for_resume(db: Session, resume_id: uuid.UUID) -> list[Match
     db.execute(delete(MatchResult).where(MatchResult.resume_id == resume_id))
 
     for job in jobs:
-        score, reason = calculate_match_score(profile, job)
+        score, reason, breakdown, matched_skills = calculate_match_score(profile, job)
 
         match = MatchResult(
             resume_id=resume_id,
             job_id=job.id,
             score=score,
             reason=reason,
+            score_breakdown=breakdown,
+            matched_skills=matched_skills,
             matched_at=datetime.now(timezone.utc),
         )
         db.add(match)

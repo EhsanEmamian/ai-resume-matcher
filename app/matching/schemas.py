@@ -24,6 +24,8 @@ class MatchResultRead(BaseModel):
     job_id: uuid.UUID
     score: float
     reason: str
+    score_breakdown: dict | None
+    matched_skills: list[str] | None
     matched_at: datetime
     job: MatchedJobRead
 
