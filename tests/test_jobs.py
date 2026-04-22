@@ -1,18 +1,7 @@
-import sys
-from pathlib import Path
-
 from fastapi.testclient import TestClient
 
 
-sys.path.append(str(Path(__file__).resolve().parents[1]))
-
-from app.main import app  # noqa: E402
-
-
-client = TestClient(app)
-
-
-def test_create_job() -> None:
+def test_create_job(client: TestClient) -> None:
     payload = {
         "title": "Backend Engineer",
         "company": "Test Company",
@@ -38,7 +27,7 @@ def test_create_job() -> None:
     assert "created_at" in data
 
 
-def test_list_jobs() -> None:
+def test_list_jobs(client: TestClient) -> None:
     response = client.get("/jobs")
 
     assert response.status_code == 200

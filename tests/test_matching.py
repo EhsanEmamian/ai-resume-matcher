@@ -1,19 +1,12 @@
-import sys
 from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-sys.path.append(str(Path(__file__).resolve().parents[1]))
-
-from app.main import app  # noqa: E402
-
-
-client = TestClient(app)
 
 FIXTURE_PDF_PATH = Path(__file__).resolve().parent / "fixtures" / "test_resume.pdf"
 
 
-def _create_job(title: str, skills: list[str], remote: bool = True) -> dict:
+def _create_job(client: TestClient, title: str, skills: list[str], remote: bool = True) -> dict:
     payload = {
         "title": title,
         "company": "Test Company",
@@ -28,7 +21,7 @@ def _create_job(title: str, skills: list[str], remote: bool = True) -> dict:
     return response.json()
 
 
-def _upload_and_parse_resume() -> str:
+def _upload_and_parse_resume(client: TestClient) -> str:
     with FIXTURE_PDF_PATH.open("rb") as f:
         files = {
             "file": ("matching_resume.pdf", f, "application/pdf")
@@ -44,11 +37,11 @@ def _upload_and_parse_resume() -> str:
     return resume_id
 
 
-def test_generate_matches_for_resume() -> None:
-    _create_job("Backend Engineer", ["Python", "FastAPI", "PostgreSQL"], remote=True)
-    _create_job("Frontend Developer", ["React", "TypeScript", "CSS"], remote=False)
+def test_generate_matches_for_resume(client: TestClient) -> None:
+    _create_job(client, "Backend Engineer", ["Python", "FastAPI", "PostgreSQL"], remote=True)
+    _create_job(client, "Frontend Developer", ["React", "TypeScript", "CSS"], remote=False)
 
-    resume_id = _upload_and_parse_resume()
+    resume_id = _upload_and_parse_resume(client)
 
     response = client.post(f"/matches/{resume_id}")
     assert response.status_code == 200, response.text
@@ -67,10 +60,10 @@ def test_generate_matches_for_resume() -> None:
     assert "company" in first_match["job"]
 
 
-def test_list_matches_with_min_score_filter() -> None:
-    _create_job("Python Backend Developer", ["Python", "SQL"], remote=True)
+def test_list_matches_with_min_score_filter(client: TestClient) -> None:
+    _create_job(client, "Python Backend Developer", ["Python", "SQL"], remote=True)
 
-    resume_id = _upload_and_parse_resume()
+    resume_id = _upload_and_parse_resume(client)
 
     generate_response = client.post(f"/matches/{resume_id}")
     assert generate_response.status_code == 200, generate_response.text

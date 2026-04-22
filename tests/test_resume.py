@@ -1,19 +1,12 @@
-import sys
 from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-sys.path.append(str(Path(__file__).resolve().parents[1]))
-
-from app.main import app  # noqa: E402
-
-
-client = TestClient(app)
 
 FIXTURE_PDF_PATH = Path(__file__).resolve().parent / "fixtures" / "test_resume.pdf"
 
 
-def test_upload_resume() -> None:
+def test_upload_resume(client: TestClient) -> None:
     with FIXTURE_PDF_PATH.open("rb") as f:
         files = {
             "file": ("test_resume.pdf", f, "application/pdf")
@@ -30,7 +23,7 @@ def test_upload_resume() -> None:
     assert "uploaded_at" in data
 
 
-def test_parse_resume_and_get_profile() -> None:
+def test_parse_resume_and_get_profile(client: TestClient) -> None:
     with FIXTURE_PDF_PATH.open("rb") as f:
         files = {
             "file": ("test_resume_parse.pdf", f, "application/pdf")
