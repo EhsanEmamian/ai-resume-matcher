@@ -3,10 +3,11 @@ import uuid
 from pathlib import Path
 
 from fastapi import UploadFile
-from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import select
+from sqlalchemy.orm import Session, selectinload
 
 from app.ai.resume_parser import ResumeParsingError, parse_resume_with_ai
+from app.matching.models import MatchResult
 from app.resume.models import Resume, ResumeProfile
 from app.resume.pdf_extractor import PDFExtractionError, extract_text_from_pdf
 
@@ -120,3 +121,31 @@ def parse_resume_profile(db: Session, resume_id: uuid.UUID) -> ResumeProfile:
     db.commit()
     db.refresh(profile)
     return profile
+
+
+def create_and_parse_resume(db: Session, upload_file: UploadFile) -> tuple[Resume, ResumeProfile]:
+    resume = create_resume(db, upload_file)
+    profile = parse_resume_profile(db, resume.id)
+    return resume, profile
+
+
+def get_resume_full(db: Session, resume_id: uuid.UUID) -> tuple[Resume, list[MatchResult]] | None:
+    stmt = (
+        select(Resume)
+        .options(selectinload(Resume.profile))
+        .where(Resume.id == resume_id)
+    )
+    resume = db.scalar(stmt)
+
+    if resume is None:
+        return None
+
+    match_stmt = (
+        select(MatchResult)
+        .options(selectinload(MatchResult.job))
+        .where(MatchResult.resume_id == resume_id)
+        .order_by(MatchResult.score.desc(), MatchResult.matched_at.desc())
+    )
+    matches = list(db.scalars(match_stmt).all())
+
+    return resume, matches

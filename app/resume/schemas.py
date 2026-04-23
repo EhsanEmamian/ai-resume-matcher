@@ -3,6 +3,8 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
+from app.matching.schemas import MatchResultRead
+
 
 class ResumeProfileRead(BaseModel):
     id: uuid.UUID
@@ -43,5 +45,28 @@ class ResumeUploadResponse(BaseModel):
 class ResumeParseResponse(BaseModel):
     resume_id: uuid.UUID
     profile: ResumeProfileRead
+
+    model_config = {"from_attributes": True}
+
+
+class ResumeUploadAndParseResponse(BaseModel):
+    resume_id: uuid.UUID
+    filename: str
+    content_type: str
+    uploaded_at: datetime
+    profile: ResumeProfileRead
+
+    model_config = {"from_attributes": True}
+
+
+class ResumeFullResponse(BaseModel):
+    id: uuid.UUID
+    filename: str
+    content_type: str
+    file_path: str
+    raw_text: str
+    uploaded_at: datetime
+    profile: ResumeProfileRead | None = None
+    matches: list[MatchResultRead] = []
 
     model_config = {"from_attributes": True}
