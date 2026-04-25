@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import Header from "@/components/Header";
 import {
   generateMatches,
@@ -8,10 +8,19 @@ import {
   type MatchItem,
 } from "@/lib/api";
 
+type FilterValue = "all" | "strong" | "moderate" | "weak";
+
 function scoreLabel(score: number) {
   if (score >= 0.7) return "Strong Match";
   if (score >= 0.4) return "Moderate Match";
   return "Weak Match";
+}
+
+function matchesFilter(match: MatchItem, filter: FilterValue) {
+  if (filter === "all") return true;
+  if (filter === "strong") return match.score >= 0.7;
+  if (filter === "moderate") return match.score >= 0.4 && match.score < 0.7;
+  return match.score < 0.4;
 }
 
 export default function MatchesPage({
@@ -24,6 +33,7 @@ export default function MatchesPage({
   const [matches, setMatches] = useState<MatchItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [filter, setFilter] = useState<FilterValue>("all");
 
   useEffect(() => {
     async function loadMatches() {
@@ -40,6 +50,10 @@ export default function MatchesPage({
 
     loadMatches();
   }, [resumeId]);
+
+  const filteredMatches = useMemo(() => {
+    return matches.filter((match) => matchesFilter(match, filter));
+  }, [matches, filter]);
 
   if (loading) {
     return (
@@ -65,20 +79,51 @@ export default function MatchesPage({
 
       <main className="min-h-screen bg-white px-6 py-12 text-black">
         <div className="mx-auto max-w-5xl space-y-6">
-          <div>
-            <p className="text-sm uppercase tracking-[0.2em] text-gray-500">
-              Match Results
-            </p>
-            <h1 className="mt-2 text-3xl font-bold">Job Matches</h1>
-            <p className="mt-2 text-sm text-gray-600">Resume ID: {resumeId}</p>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-sm uppercase tracking-[0.2em] text-gray-500">
+                Match Results
+              </p>
+              <h1 className="mt-2 text-3xl font-bold">Job Matches</h1>
+              <p className="mt-2 text-sm text-gray-600">Resume ID: {resumeId}</p>
+            </div>
+
+            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-3">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Filter by match quality
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {(["all", "strong", "moderate", "weak"] as FilterValue[]).map(
+                  (value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setFilter(value)}
+                      className={`rounded-xl px-3 py-2 text-sm font-medium transition ${
+                        filter === value
+                          ? "bg-black text-white"
+                          : "border border-gray-300 bg-white text-black"
+                      }`}
+                    >
+                      {value.charAt(0).toUpperCase() + value.slice(1)}
+                    </button>
+                  )
+                )}
+              </div>
+            </div>
           </div>
 
-          {matches.length === 0 ? (
+          <div className="text-sm text-gray-600">
+            Showing <span className="font-semibold">{filteredMatches.length}</span> of{" "}
+            <span className="font-semibold">{matches.length}</span> matches
+          </div>
+
+          {filteredMatches.length === 0 ? (
             <div className="rounded-2xl border border-gray-200 bg-gray-50 p-6">
-              No matches found.
+              No matches found for this filter.
             </div>
           ) : (
-            matches.map((match) => (
+            filteredMatches.map((match) => (
               <div
                 key={match.id}
                 className="rounded-2xl border border-gray-200 bg-gray-50 p-6 shadow-sm"
