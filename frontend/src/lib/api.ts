@@ -1,6 +1,72 @@
 const API_BASE_URL = "http://localhost:8000";
 
-export async function uploadAndParseResume(file: File) {
+export type ResumeProfile = {
+  id: string;
+  resume_id: string;
+  skills: string[];
+  technologies: string[];
+  languages: string[];
+  years_of_experience: number | null;
+  seniority_level: string | null;
+  suggested_roles: string[];
+  raw_ai_response?: Record<string, unknown> | null;
+  parsed_at: string;
+};
+
+export type ResumeUploadAndParseResponse = {
+  resume_id: string;
+  filename: string;
+  content_type: string;
+  uploaded_at: string;
+  profile: ResumeProfile;
+};
+
+export type MatchItem = {
+  id: string;
+  score: number;
+  reason: string;
+  score_breakdown: {
+    skill_overlap_score: number;
+    role_overlap_score: number;
+    remote_bonus: number;
+    final_score: number;
+  } | null;
+  matched_skills: string[] | null;
+  job: {
+    id: string;
+    title: string;
+    company: string;
+    description: string;
+    required_skills: string[];
+    location: string | null;
+    remote: boolean;
+  };
+};
+
+export type ResumeFullResponse = {
+  id: string;
+  filename: string;
+  content_type: string;
+  file_path: string;
+  raw_text: string;
+  uploaded_at: string;
+  profile: ResumeProfile | null;
+  matches: MatchItem[];
+};
+
+async function handleResponse<T>(response: Response): Promise<T> {
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.detail || "Request failed.");
+  }
+
+  return data as T;
+}
+
+export async function uploadAndParseResume(
+  file: File
+): Promise<ResumeUploadAndParseResponse> {
   const formData = new FormData();
   formData.append("file", file);
 
@@ -9,11 +75,30 @@ export async function uploadAndParseResume(file: File) {
     body: formData,
   });
 
-  const data = await response.json();
+  return handleResponse<ResumeUploadAndParseResponse>(response);
+}
+
+export async function getResumeFull(
+  resumeId: string
+): Promise<ResumeFullResponse> {
+  const response = await fetch(`${API_BASE_URL}/resumes/${resumeId}/full`);
+  return handleResponse<ResumeFullResponse>(response);
+}
+
+export async function generateMatches(resumeId: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/matches/${resumeId}`, {
+    method: "POST",
+  });
 
   if (!response.ok) {
-    throw new Error(data.detail || "Failed to upload and parse resume.");
+    const data = await response.json();
+    throw new Error(data.detail || "Failed to generate matches.");
   }
+}
 
-  return data;
+export async function getMatches(resumeId: string): Promise<{ items: MatchItem[] }> {
+  const response = await fetch(
+    `${API_BASE_URL}/matches/${resumeId}?min_score=0&sort_by=score`
+  );
+  return handleResponse<{ items: MatchItem[] }>(response);
 }
