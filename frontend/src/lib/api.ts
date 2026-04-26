@@ -71,6 +71,30 @@ export type IngestJobsResult = {
   country: string;
 };
 
+export type JobItem = {
+  id: string;
+  title: string;
+  company: string;
+  description: string;
+  required_skills: string[];
+  location: string | null;
+  remote: boolean;
+  source: string;
+  source_id: string | null;
+  source_url: string | null;
+  salary_min: number | null;
+  salary_max: number | null;
+  contract_type: string | null;
+  category: string | null;
+  posted_at: string | null;
+  created_at: string;
+};
+
+export type JobsListResponse = {
+  total: number;
+  items: JobItem[];
+};
+
 async function handleResponse<T>(response: Response): Promise<T> {
   const data = await response.json();
 
@@ -134,4 +158,14 @@ export async function ingestJobs(
   });
 
   return handleResponse<IngestJobsResult>(response);
+}
+
+export async function getJobs(
+  skip = 0,
+  limit = 20
+): Promise<JobsListResponse> {
+  const response = await fetch(
+    `${API_BASE_URL}/jobs?skip=${skip}&limit=${limit}`
+  );
+  return handleResponse<JobsListResponse>(response);
 }

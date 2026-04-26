@@ -15,6 +15,12 @@ export default function Header() {
           >
             Upload
           </Link>
+          <Link
+            href="/jobs"
+            className="rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-100"
+          >
+            Jobs
+          </Link>
         </nav>
       </div>
     </header>
