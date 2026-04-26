@@ -22,6 +22,13 @@ class JobPostingRead(BaseModel):
     required_skills: list[str]
     location: str | None
     remote: bool
+    source: str
+    source_id: str | None
+    source_url: str | None
+    salary_min: float | None
+    salary_max: float | None
+    contract_type: str | None
+    category: str | None
     posted_at: datetime | None
     created_at: datetime
 
@@ -31,3 +38,39 @@ class JobPostingRead(BaseModel):
 class JobPostingList(BaseModel):
     total: int
     items: list[JobPostingRead]
+
+
+class IngestJobsRequest(BaseModel):
+    keyword: str = Field(
+        ...,
+        min_length=1,
+        max_length=100,
+        description="Job title or keyword to search for",
+    )
+    location: str = Field(
+        default="",
+        max_length=100,
+        description="City or region, e.g. Berlin",
+    )
+    country: str = Field(
+        default="de",
+        min_length=2,
+        max_length=2,
+        description="ISO country code, e.g. de, gb, us",
+    )
+    max_results: int = Field(
+        default=25,
+        ge=1,
+        le=50,
+        description="Maximum number of jobs to fetch",
+    )
+
+
+class IngestJobsResult(BaseModel):
+    fetched: int
+    created: int
+    skipped: int
+    errors: int
+    keyword: str
+    location: str
+    country: str

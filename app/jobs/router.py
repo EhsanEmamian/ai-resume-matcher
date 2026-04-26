@@ -5,8 +5,14 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.exceptions import NotFoundError
-from app.jobs import service
-from app.jobs.schemas import JobPostingCreate, JobPostingList, JobPostingRead
+from app.jobs import ingestion, service
+from app.jobs.schemas import (
+    IngestJobsRequest,
+    IngestJobsResult,
+    JobPostingCreate,
+    JobPostingList,
+    JobPostingRead,
+)
 
 router = APIRouter()
 
@@ -23,6 +29,35 @@ def create_job(
 ) -> JobPostingRead:
     job = service.create_job(db, payload)
     return job
+
+
+@router.post(
+    "/ingest",
+    response_model=IngestJobsResult,
+    status_code=status.HTTP_200_OK,
+    summary="Ingest jobs from Adzuna",
+)
+def ingest_jobs(
+    payload: IngestJobsRequest,
+    db: Session = Depends(get_db),
+) -> IngestJobsResult:
+    summary = ingestion.ingest_adzuna_jobs(
+        db=db,
+        keyword=payload.keyword,
+        location=payload.location,
+        country=payload.country,
+        max_results=payload.max_results,
+    )
+
+    return IngestJobsResult(
+        fetched=summary.fetched,
+        created=summary.created,
+        skipped=summary.skipped,
+        errors=summary.errors,
+        keyword=summary.keyword,
+        location=summary.location,
+        country=summary.country,
+    )
 
 
 @router.get(
