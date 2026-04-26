@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.jobs.models import JobPosting
 from app.jobs.schemas import JobPostingCreate
+from app.jobs.skill_extractor import extract_skills_from_text
 
 
 def create_job(db: Session, payload: JobPostingCreate) -> JobPosting:
@@ -37,6 +38,14 @@ def import_external_job(db: Session, payload: dict) -> tuple[str, JobPosting]:
 
     if existing is not None:
         return "already_exists", existing
+
+    extracted_skills = extract_skills_from_text(
+        title=payload.get("title", ""),
+        description=payload.get("description", ""),
+    )
+
+    if not payload.get("required_skills"):
+        payload["required_skills"] = extracted_skills
 
     job = JobPosting(**payload)
     db.add(job)

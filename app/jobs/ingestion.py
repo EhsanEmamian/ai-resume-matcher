@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.jobs.adzuna_client import fetch_jobs
 from app.jobs.models import JobPosting
+from app.jobs.skill_extractor import extract_skills_from_text
 
 
 @dataclass
@@ -55,6 +56,12 @@ def ingest_adzuna_jobs(
             continue
 
         try:
+            if not job_data.get("required_skills"):
+                job_data["required_skills"] = extract_skills_from_text(
+                    title=job_data.get("title", ""),
+                    description=job_data.get("description", ""),
+                )
+
             job = JobPosting(**job_data)
             db.add(job)
             db.commit()
