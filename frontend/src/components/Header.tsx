@@ -13,13 +13,19 @@ export default function Header() {
             href="/"
             className="rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-100"
           >
-            Upload
+            Home
+          </Link>
+          <Link
+            href="/live-jobs"
+            className="rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-100"
+          >
+            Live Search
           </Link>
           <Link
             href="/jobs"
             className="rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-100"
           >
-            Jobs
+            Imported Jobs
           </Link>
         </nav>
       </div>

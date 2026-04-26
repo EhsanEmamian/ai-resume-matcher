@@ -95,6 +95,40 @@ export type JobsListResponse = {
   items: JobItem[];
 };
 
+export type ExternalJobSearchRequest = {
+  keyword: string;
+  location: string;
+  country: string;
+  max_results: number;
+  page: number;
+};
+
+export type ExternalJobItem = {
+  title: string;
+  company: string;
+  description: string;
+  required_skills: string[];
+  location: string | null;
+  remote: boolean;
+  source: string;
+  source_id: string | null;
+  source_url: string | null;
+  salary_min: number | null;
+  salary_max: number | null;
+  contract_type: string | null;
+  category: string | null;
+  posted_at: string | null;
+};
+
+export type ExternalJobSearchResult = {
+  total: number;
+  items: ExternalJobItem[];
+  keyword: string;
+  location: string;
+  country: string;
+  page: number;
+};
+
 async function handleResponse<T>(response: Response): Promise<T> {
   const data = await response.json();
 
@@ -169,7 +203,22 @@ export async function getJobs(
   );
   return handleResponse<JobsListResponse>(response);
 }
+
 export async function getJob(jobId: string): Promise<JobItem> {
   const response = await fetch(`${API_BASE_URL}/jobs/${jobId}`);
   return handleResponse<JobItem>(response);
+}
+
+export async function searchExternalJobs(
+  payload: ExternalJobSearchRequest
+): Promise<ExternalJobSearchResult> {
+  const response = await fetch(`${API_BASE_URL}/jobs/search-external`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return handleResponse<ExternalJobSearchResult>(response);
 }
