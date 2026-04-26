@@ -54,6 +54,23 @@ export type ResumeFullResponse = {
   matches: MatchItem[];
 };
 
+export type IngestJobsRequest = {
+  keyword: string;
+  location: string;
+  country: string;
+  max_results: number;
+};
+
+export type IngestJobsResult = {
+  fetched: number;
+  created: number;
+  skipped: number;
+  errors: number;
+  keyword: string;
+  location: string;
+  country: string;
+};
+
 async function handleResponse<T>(response: Response): Promise<T> {
   const data = await response.json();
 
@@ -96,9 +113,25 @@ export async function generateMatches(resumeId: string): Promise<void> {
   }
 }
 
-export async function getMatches(resumeId: string): Promise<{ items: MatchItem[] }> {
+export async function getMatches(
+  resumeId: string
+): Promise<{ items: MatchItem[] }> {
   const response = await fetch(
     `${API_BASE_URL}/matches/${resumeId}?min_score=0&sort_by=score`
   );
   return handleResponse<{ items: MatchItem[] }>(response);
+}
+
+export async function ingestJobs(
+  payload: IngestJobsRequest
+): Promise<IngestJobsResult> {
+  const response = await fetch(`${API_BASE_URL}/jobs/ingest`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return handleResponse<IngestJobsResult>(response);
 }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
+import JobIngestionPanel from "@/components/JobIngestionPanel";
 import { uploadAndParseResume } from "@/lib/api";
 
 export default function Home() {
@@ -37,20 +38,20 @@ export default function Home() {
       <Header />
 
       <main className="min-h-screen bg-white text-black">
-        <div className="mx-auto max-w-3xl px-6 py-16">
-          <div className="mb-10 text-center">
-            <p className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-gray-500">
-              AI Resume Matcher
-            </p>
-            <h1 className="mb-4 text-4xl font-bold tracking-tight sm:text-5xl">
-              Upload and parse a resume
-            </h1>
-            <p className="text-base text-gray-600 sm:text-lg">
-              Upload a PDF resume and get a structured profile from the backend.
-            </p>
-          </div>
+        <div className="mx-auto max-w-5xl space-y-8 px-6 py-16">
+          <section className="rounded-2xl border border-gray-200 bg-gray-50 p-6 shadow-sm">
+            <div className="mb-6 text-center">
+              <p className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-gray-500">
+                AI Resume Matcher
+              </p>
+              <h1 className="mb-4 text-4xl font-bold tracking-tight sm:text-5xl">
+                Upload and parse a resume
+              </h1>
+              <p className="text-base text-gray-600 sm:text-lg">
+                Upload a PDF resume and get a structured profile from the backend.
+              </p>
+            </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-gray-50 p-6 shadow-sm">
             <form onSubmit={handleSubmit} className="space-y-4">
               <input
                 type="file"
@@ -73,7 +74,9 @@ export default function Home() {
                 {error}
               </div>
             )}
-          </div>
+          </section>
+
+          <JobIngestionPanel />
         </div>
       </main>
     </>
