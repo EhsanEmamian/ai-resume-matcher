@@ -8,6 +8,7 @@ from app.exceptions import NotFoundError
 from app.jobs import ingestion, service
 from app.jobs.adzuna_client import search_jobs
 from app.jobs.schemas import (
+    BackfillJobSkillsResult,
     ExternalJobRead,
     ExternalJobSearchRequest,
     ExternalJobSearchResult,
@@ -49,6 +50,19 @@ def import_external_job(
 ) -> ImportExternalJobResult:
     status_value, job = service.import_external_job(db, payload.model_dump())
     return ImportExternalJobResult(status=status_value, job=job)
+
+
+@router.post(
+    "/backfill-skills",
+    response_model=BackfillJobSkillsResult,
+    status_code=status.HTTP_200_OK,
+    summary="Backfill required skills for existing jobs",
+)
+def backfill_job_skills(
+    db: Session = Depends(get_db),
+) -> BackfillJobSkillsResult:
+    result = service.backfill_job_skills(db)
+    return BackfillJobSkillsResult(**result)
 
 
 @router.post(

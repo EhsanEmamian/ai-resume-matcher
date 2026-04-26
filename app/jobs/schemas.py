@@ -41,29 +41,10 @@ class JobPostingList(BaseModel):
 
 
 class IngestJobsRequest(BaseModel):
-    keyword: str = Field(
-        ...,
-        min_length=1,
-        max_length=100,
-        description="Job title or keyword to search for",
-    )
-    location: str = Field(
-        default="",
-        max_length=100,
-        description="City or region, e.g. Berlin",
-    )
-    country: str = Field(
-        default="de",
-        min_length=2,
-        max_length=2,
-        description="ISO country code, e.g. de, gb, us",
-    )
-    max_results: int = Field(
-        default=25,
-        ge=1,
-        le=50,
-        description="Maximum number of jobs to fetch",
-    )
+    keyword: str = Field(..., min_length=1, max_length=100)
+    location: str = Field(default="", max_length=100)
+    country: str = Field(default="de", min_length=2, max_length=2)
+    max_results: int = Field(default=25, ge=1, le=50)
 
 
 class IngestJobsResult(BaseModel):
@@ -130,3 +111,9 @@ class ImportExternalJobRequest(BaseModel):
 class ImportExternalJobResult(BaseModel):
     status: str
     job: JobPostingRead
+
+
+class BackfillJobSkillsResult(BaseModel):
+    total: int
+    updated: int
+    skipped: int

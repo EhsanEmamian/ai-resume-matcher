@@ -54,6 +54,37 @@ def import_external_job(db: Session, payload: dict) -> tuple[str, JobPosting]:
     return "imported", job
 
 
+def backfill_job_skills(db: Session) -> dict:
+    jobs = list(db.scalars(select(JobPosting)).all())
+
+    updated = 0
+    skipped = 0
+
+    for job in jobs:
+        if job.required_skills:
+            skipped += 1
+            continue
+
+        extracted_skills = extract_skills_from_text(
+            title=job.title or "",
+            description=job.description or "",
+        )
+
+        if extracted_skills:
+            job.required_skills = extracted_skills
+            updated += 1
+        else:
+            skipped += 1
+
+    db.commit()
+
+    return {
+        "total": len(jobs),
+        "updated": updated,
+        "skipped": skipped,
+    }
+
+
 def list_jobs(db: Session, skip: int = 0, limit: int = 20) -> tuple[int, list[JobPosting]]:
     total = db.scalar(select(func.count()).select_from(JobPosting)) or 0
 
