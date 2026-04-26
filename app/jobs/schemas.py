@@ -108,3 +108,25 @@ class ExternalJobSearchResult(BaseModel):
     location: str
     country: str
     page: int
+
+
+class ImportExternalJobRequest(BaseModel):
+    title: str
+    company: str
+    description: str
+    required_skills: list[str] = Field(default_factory=list)
+    location: str | None = None
+    remote: bool = False
+    source: str
+    source_id: str | None = None
+    source_url: str | None = None
+    salary_min: float | None = None
+    salary_max: float | None = None
+    contract_type: str | None = None
+    category: str | None = None
+    posted_at: datetime | None = None
+
+
+class ImportExternalJobResult(BaseModel):
+    status: str
+    job: JobPostingRead

@@ -11,6 +11,8 @@ from app.jobs.schemas import (
     ExternalJobRead,
     ExternalJobSearchRequest,
     ExternalJobSearchResult,
+    ImportExternalJobRequest,
+    ImportExternalJobResult,
     IngestJobsRequest,
     IngestJobsResult,
     JobPostingCreate,
@@ -33,6 +35,20 @@ def create_job(
 ) -> JobPostingRead:
     job = service.create_job(db, payload)
     return job
+
+
+@router.post(
+    "/import-external",
+    response_model=ImportExternalJobResult,
+    status_code=status.HTTP_200_OK,
+    summary="Import a single external job into local storage",
+)
+def import_external_job(
+    payload: ImportExternalJobRequest,
+    db: Session = Depends(get_db),
+) -> ImportExternalJobResult:
+    status_value, job = service.import_external_job(db, payload.model_dump())
+    return ImportExternalJobResult(status=status_value, job=job)
 
 
 @router.post(

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Header from "@/components/Header";
 import {
+  importExternalJob,
   searchExternalJobs,
   type ExternalJobItem,
 } from "@/lib/api";
@@ -20,11 +21,12 @@ export default function LiveJobsPage() {
   const [page, setPage] = useState(1);
 
   const [results, setResults] = useState<ExternalJobItem[]>([]);
-  const [total, setTotal] = useState(0);
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [expandedIndexes, setExpandedIndexes] = useState<number[]>([]);
+  const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
+  const [savingJobIds, setSavingJobIds] = useState<string[]>([]);
 
   function toggleExpanded(index: number) {
     setExpandedIndexes((prev) =>
@@ -52,12 +54,26 @@ export default function LiveJobsPage() {
       });
 
       setResults(data.items);
-      setTotal(data.total);
       setSearched(true);
     } catch (err: any) {
       setError(err.message || "Failed to search live jobs.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleSaveJob(job: ExternalJobItem, index: number) {
+    const saveKey = `${job.source_id ?? "no-id"}-${index}`;
+
+    setSavingJobIds((prev) => [...prev, saveKey]);
+
+    try {
+      await importExternalJob(job);
+      setSavedJobIds((prev) => [...prev, saveKey]);
+    } catch (err: any) {
+      setError(err.message || "Failed to save job.");
+    } finally {
+      setSavingJobIds((prev) => prev.filter((id) => id !== saveKey));
     }
   }
 
@@ -182,6 +198,10 @@ export default function LiveJobsPage() {
                 ? job.description
                 : truncateText(job.description);
 
+              const saveKey = `${job.source_id ?? "no-id"}-${index}`;
+              const isSaved = savedJobIds.includes(saveKey);
+              const isSaving = savingJobIds.includes(saveKey);
+
               return (
                 <div
                   key={`${job.source_id}-${index}`}
@@ -197,8 +217,18 @@ export default function LiveJobsPage() {
                       </p>
                     </div>
 
-                    <div className="rounded-xl bg-black px-3 py-2 text-sm font-medium text-white">
-                      Live Adzuna
+                    <div className="flex flex-col gap-2">
+                      <div className="rounded-xl bg-black px-3 py-2 text-sm font-medium text-white">
+                        Live Adzuna
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleSaveJob(job, index)}
+                        disabled={isSaved || isSaving}
+                        className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-medium disabled:opacity-50"
+                      >
+                        {isSaved ? "Saved" : isSaving ? "Saving..." : "Save Job"}
+                      </button>
                     </div>
                   </div>
 

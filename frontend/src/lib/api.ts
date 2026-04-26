@@ -129,6 +129,11 @@ export type ExternalJobSearchResult = {
   page: number;
 };
 
+export type ImportExternalJobResult = {
+  status: string;
+  job: JobItem;
+};
+
 async function handleResponse<T>(response: Response): Promise<T> {
   const data = await response.json();
 
@@ -221,4 +226,18 @@ export async function searchExternalJobs(
   });
 
   return handleResponse<ExternalJobSearchResult>(response);
+}
+
+export async function importExternalJob(
+  payload: ExternalJobItem
+): Promise<ImportExternalJobResult> {
+  const response = await fetch(`${API_BASE_URL}/jobs/import-external`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return handleResponse<ImportExternalJobResult>(response);
 }
