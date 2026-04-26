@@ -6,7 +6,11 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.exceptions import NotFoundError
 from app.jobs import ingestion, service
+from app.jobs.adzuna_client import search_jobs
 from app.jobs.schemas import (
+    ExternalJobRead,
+    ExternalJobSearchRequest,
+    ExternalJobSearchResult,
     IngestJobsRequest,
     IngestJobsResult,
     JobPostingCreate,
@@ -57,6 +61,33 @@ def ingest_jobs(
         keyword=summary.keyword,
         location=summary.location,
         country=summary.country,
+    )
+
+
+@router.post(
+    "/search-external",
+    response_model=ExternalJobSearchResult,
+    status_code=status.HTTP_200_OK,
+    summary="Search external jobs live from Adzuna",
+)
+def search_external_jobs(
+    payload: ExternalJobSearchRequest,
+) -> ExternalJobSearchResult:
+    jobs = search_jobs(
+        keyword=payload.keyword,
+        location=payload.location,
+        country=payload.country,
+        max_results=payload.max_results,
+        page=payload.page,
+    )
+
+    return ExternalJobSearchResult(
+        total=len(jobs),
+        items=[ExternalJobRead(**job) for job in jobs],
+        keyword=payload.keyword,
+        location=payload.location,
+        country=payload.country,
+        page=payload.page,
     )
 
 

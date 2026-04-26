@@ -74,3 +74,37 @@ class IngestJobsResult(BaseModel):
     keyword: str
     location: str
     country: str
+
+
+class ExternalJobSearchRequest(BaseModel):
+    keyword: str = Field(..., min_length=1, max_length=100)
+    location: str = Field(default="", max_length=100)
+    country: str = Field(default="de", min_length=2, max_length=2)
+    max_results: int = Field(default=20, ge=1, le=50)
+    page: int = Field(default=1, ge=1, le=20)
+
+
+class ExternalJobRead(BaseModel):
+    title: str
+    company: str
+    description: str
+    required_skills: list[str]
+    location: str | None
+    remote: bool
+    source: str
+    source_id: str | None
+    source_url: str | None
+    salary_min: float | None
+    salary_max: float | None
+    contract_type: str | None
+    category: str | None
+    posted_at: datetime | None
+
+
+class ExternalJobSearchResult(BaseModel):
+    total: int
+    items: list[ExternalJobRead]
+    keyword: str
+    location: str
+    country: str
+    page: int

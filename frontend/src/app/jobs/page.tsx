@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import Header from "@/components/Header";
 import { getJobs, type JobItem } from "@/lib/api";
 
@@ -57,11 +57,20 @@ export default function JobsPage() {
       const matchesSource =
         sourceFilter === "all" ? true : job.source === sourceFilter;
 
+      const searchableText = [
+        job.title,
+        job.company,
+        job.description,
+        job.category ?? "",
+        ...(job.required_skills ?? []),
+      ]
+        .join(" ")
+        .toLowerCase();
+
       const matchesSearch =
         normalizedSearch.length === 0
           ? true
-          : job.title.toLowerCase().includes(normalizedSearch) ||
-            job.company.toLowerCase().includes(normalizedSearch);
+          : searchableText.includes(normalizedSearch);
 
       return matchesSource && matchesSearch;
     });
@@ -123,9 +132,8 @@ export default function JobsPage() {
               </p>
               <h1 className="mt-2 text-3xl font-bold">Available Jobs</h1>
               <p className="mt-2 text-sm text-gray-600">
-                Showing {paginatedJobs.length} jobs on page {currentPage} of{" "}
-                {totalPages} • Filtered: {filteredJobs.length} • Backend total:{" "}
-                {total}
+                Showing {paginatedJobs.length} jobs on page {currentPage} of {totalPages}
+                {" "}• Filtered: {filteredJobs.length} • Backend total: {total}
               </p>
             </div>
 
@@ -140,7 +148,7 @@ export default function JobsPage() {
           <section className="grid gap-4 rounded-2xl border border-gray-200 bg-gray-50 p-5 shadow-sm md:grid-cols-3">
             <div>
               <label className="mb-1 block text-sm font-medium">
-                Search by title or company
+                Search title, company, description, category, skills
               </label>
               <input
                 value={search}
@@ -155,22 +163,20 @@ export default function JobsPage() {
                 Filter by source
               </label>
               <div className="flex flex-wrap gap-2">
-                {(["all", "manual", "adzuna"] as SourceFilter[]).map(
-                  (value) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => setSourceFilter(value)}
-                      className={`rounded-xl px-3 py-2 text-sm font-medium transition ${
-                        sourceFilter === value
-                          ? "bg-black text-white"
-                          : "border border-gray-300 bg-white text-black"
-                      }`}
-                    >
-                      {value.charAt(0).toUpperCase() + value.slice(1)}
-                    </button>
-                  )
-                )}
+                {(["all", "manual", "adzuna"] as SourceFilter[]).map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setSourceFilter(value)}
+                    className={`rounded-xl px-3 py-2 text-sm font-medium transition ${
+                      sourceFilter === value
+                        ? "bg-black text-white"
+                        : "border border-gray-300 bg-white text-black"
+                    }`}
+                  >
+                    {value.charAt(0).toUpperCase() + value.slice(1)}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -208,14 +214,10 @@ export default function JobsPage() {
                     <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div>
                         <h2 className="text-xl font-semibold">
-                          <Link
-                            href={`/jobs/${job.id}`}
-                            className="hover:underline"
-                          >
+                          <Link href={`/jobs/${job.id}`} className="hover:underline">
                             {job.title}
                           </Link>
                         </h2>
-
                         <p className="text-sm text-gray-600">{job.company}</p>
                         <p className="mt-1 text-sm text-gray-500">
                           {job.location || "No location"} •{" "}
@@ -251,9 +253,7 @@ export default function JobsPage() {
                         <p>
                           <span className="font-medium">Salary:</span>{" "}
                           {job.salary_min || job.salary_max
-                            ? `${job.salary_min ?? "-"} - ${
-                                job.salary_max ?? "-"
-                              }`
+                            ? `${job.salary_min ?? "-"} - ${job.salary_max ?? "-"}`
                             : "-"}
                         </p>
                       </div>
@@ -261,9 +261,7 @@ export default function JobsPage() {
 
                     <div className="rounded-xl border border-gray-200 bg-white p-4 text-sm">
                       <p className="mb-2 font-semibold">Job description</p>
-                      <p className="leading-6 text-gray-700">
-                        {descriptionToShow}
-                      </p>
+                      <p className="leading-6 text-gray-700">{descriptionToShow}</p>
 
                       {job.description.length > 220 && (
                         <button

@@ -41,16 +41,17 @@ def _normalize_job(job: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def fetch_jobs(
+def search_jobs(
     keyword: str,
     location: str,
     country: str,
     max_results: int,
+    page: int = 1,
 ) -> list[dict[str, Any]]:
     if not settings.ADZUNA_APP_ID or not settings.ADZUNA_APP_KEY:
         raise AdzunaClientError("Adzuna credentials are not configured.", status_code=400)
 
-    url = f"{settings.ADZUNA_BASE_URL}/{country}/search/1"
+    url = f"{settings.ADZUNA_BASE_URL}/{country}/search/{page}"
 
     params = {
         "app_id": settings.ADZUNA_APP_ID,
@@ -81,3 +82,18 @@ def fetch_jobs(
         raise AdzunaClientError("Unexpected Adzuna response format.")
 
     return [_normalize_job(job) for job in results]
+
+
+def fetch_jobs(
+    keyword: str,
+    location: str,
+    country: str,
+    max_results: int,
+) -> list[dict[str, Any]]:
+    return search_jobs(
+        keyword=keyword,
+        location=location,
+        country=country,
+        max_results=max_results,
+        page=1,
+    )
