@@ -8,6 +8,20 @@ import {
   type ExternalJobItem,
 } from "@/lib/api";
 
+const COUNTRY_OPTIONS = [
+  { value: "de", label: "Germany (de)" },
+  { value: "at", label: "Austria (at)" },
+  { value: "gb", label: "United Kingdom (gb)" },
+  { value: "us", label: "United States (us)" },
+];
+
+const PRESET_SEARCHES = [
+  { keyword: "software engineer", location: "Berlin", country: "de" },
+  { keyword: "python developer", location: "", country: "at" },
+  { keyword: "backend developer", location: "", country: "de" },
+  { keyword: "java developer", location: "Vienna", country: "at" },
+];
+
 function truncateText(text: string, maxLength = 260) {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength) + "...";
@@ -34,6 +48,17 @@ export default function LiveJobsPage() {
         ? prev.filter((i) => i !== index)
         : [...prev, index]
     );
+  }
+
+  function applyPreset(preset: {
+    keyword: string;
+    location: string;
+    country: string;
+  }) {
+    setKeyword(preset.keyword);
+    setLocation(preset.location);
+    setCountry(preset.country);
+    setPage(1);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -95,6 +120,20 @@ export default function LiveJobsPage() {
             </p>
           </div>
 
+          <div className="flex flex-wrap gap-2">
+            {PRESET_SEARCHES.map((preset, index) => (
+              <button
+                key={index}
+                type="button"
+                onClick={() => applyPreset(preset)}
+                className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-medium"
+              >
+                {preset.keyword}
+                {preset.location ? ` • ${preset.location}` : ""}
+              </button>
+            ))}
+          </div>
+
           <section className="rounded-2xl border border-gray-200 bg-gray-50 p-6 shadow-sm">
             <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
               <div className="lg:col-span-2">
@@ -105,6 +144,9 @@ export default function LiveJobsPage() {
                   className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
                   placeholder="software engineer"
                 />
+                <p className="mt-1 text-xs text-gray-500">
+                  Broader searches often work better than very narrow titles.
+                </p>
               </div>
 
               <div>
@@ -113,18 +155,29 @@ export default function LiveJobsPage() {
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
-                  placeholder="Berlin"
+                  placeholder="Berlin or Vienna"
                 />
+                <p className="mt-1 text-xs text-gray-500">
+                  Optional. Leave empty for broader country-wide results.
+                </p>
               </div>
 
               <div>
                 <label className="mb-1 block text-sm font-medium">Country</label>
-                <input
+                <select
                   value={country}
                   onChange={(e) => setCountry(e.target.value)}
                   className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
-                  placeholder="de"
-                />
+                >
+                  {COUNTRY_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  Must match the job market you want to search.
+                </p>
               </div>
 
               <div>
@@ -163,11 +216,11 @@ export default function LiveJobsPage() {
             </form>
 
             <div className="mt-4 rounded-xl border border-gray-200 bg-white p-4 text-sm text-gray-700">
-              Try broader searches first, مثل:
+              Good starting examples:
               <span className="font-medium"> software engineer</span>,
               <span className="font-medium"> python developer</span>,
-              <span className="font-medium"> backend</span>.
-              If a city returns 0 results, try leaving location empty and search country-wide.
+              <span className="font-medium"> backend developer</span>.
+              If a city returns 0 results, try removing the location first.
             </div>
 
             {error && (

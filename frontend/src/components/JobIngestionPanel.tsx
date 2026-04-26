@@ -3,6 +3,19 @@
 import { useState } from "react";
 import { ingestJobs, type IngestJobsResult } from "@/lib/api";
 
+const COUNTRY_OPTIONS = [
+  { value: "de", label: "Germany (de)" },
+  { value: "at", label: "Austria (at)" },
+  { value: "gb", label: "United Kingdom (gb)" },
+  { value: "us", label: "United States (us)" },
+];
+
+const PRESET_SEARCHES = [
+  { keyword: "software engineer", location: "Berlin", country: "de" },
+  { keyword: "python developer", location: "Vienna", country: "at" },
+  { keyword: "backend developer", location: "", country: "de" },
+];
+
 export default function JobIngestionPanel() {
   const [keyword, setKeyword] = useState("python backend developer");
   const [location, setLocation] = useState("Berlin");
@@ -12,6 +25,16 @@ export default function JobIngestionPanel() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<IngestJobsResult | null>(null);
+
+  function applyPreset(preset: {
+    keyword: string;
+    location: string;
+    country: string;
+  }) {
+    setKeyword(preset.keyword);
+    setLocation(preset.location);
+    setCountry(preset.country);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -47,6 +70,19 @@ export default function JobIngestionPanel() {
         </p>
       </div>
 
+      <div className="mb-4 flex flex-wrap gap-2">
+        {PRESET_SEARCHES.map((preset, index) => (
+          <button
+            key={index}
+            type="button"
+            onClick={() => applyPreset(preset)}
+            className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-medium"
+          >
+            {preset.keyword} {preset.location ? `• ${preset.location}` : ""}
+          </button>
+        ))}
+      </div>
+
       <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
           <label className="mb-1 block text-sm font-medium">Keyword</label>
@@ -56,6 +92,9 @@ export default function JobIngestionPanel() {
             className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
             placeholder="python backend developer"
           />
+          <p className="mt-1 text-xs text-gray-500">
+            Broader queries often work better, مثل: software engineer, python developer, backend.
+          </p>
         </div>
 
         <div>
@@ -64,18 +103,29 @@ export default function JobIngestionPanel() {
             value={location}
             onChange={(e) => setLocation(e.target.value)}
             className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
-            placeholder="Berlin"
+            placeholder="Berlin or Vienna"
           />
+          <p className="mt-1 text-xs text-gray-500">
+            Optional. If results are too narrow, leave this empty.
+          </p>
         </div>
 
         <div>
           <label className="mb-1 block text-sm font-medium">Country</label>
-          <input
+          <select
             value={country}
             onChange={(e) => setCountry(e.target.value)}
             className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
-            placeholder="de"
-          />
+          >
+            {COUNTRY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-gray-500">
+            Choose the country code that matches the market you want to search.
+          </p>
         </div>
 
         <div>
@@ -135,18 +185,31 @@ export default function JobIngestionPanel() {
             </p>
           </div>
 
+          {result.fetched === 0 && (
+            <div className="mt-4 rounded-xl border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
+              No jobs were returned. Try a broader keyword, remove the location,
+              or switch the country.
+            </div>
+          )}
+
           <div className="mt-4 flex flex-wrap gap-3">
             <a
               href="/jobs"
               className="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white"
             >
-              View Jobs
+              View Imported Jobs
             </a>
             <a
               href="#upload"
               className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium"
             >
               Upload Resume Next
+            </a>
+            <a
+              href="/live-jobs"
+              className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium"
+            >
+              Open Live Search
             </a>
           </div>
         </div>
