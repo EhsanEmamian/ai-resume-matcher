@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import Header from "@/components/Header";
 import {
   generateMatches,
@@ -85,7 +86,9 @@ export default function MatchesPage({
                 Match Results
               </p>
               <h1 className="mt-2 text-3xl font-bold">Job Matches</h1>
-              <p className="mt-2 text-sm text-gray-600">Resume ID: {resumeId}</p>
+              <p className="mt-2 text-sm text-gray-600">
+                Resume ID: {resumeId}
+              </p>
             </div>
 
             <div className="rounded-2xl border border-gray-200 bg-gray-50 p-3">
@@ -114,7 +117,8 @@ export default function MatchesPage({
           </div>
 
           <div className="text-sm text-gray-600">
-            Showing <span className="font-semibold">{filteredMatches.length}</span> of{" "}
+            Showing{" "}
+            <span className="font-semibold">{filteredMatches.length}</span> of{" "}
             <span className="font-semibold">{matches.length}</span> matches
           </div>
 
@@ -130,7 +134,15 @@ export default function MatchesPage({
               >
                 <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <h2 className="text-xl font-semibold">{match.job.title}</h2>
+                    <h2 className="text-xl font-semibold">
+                      <Link
+                        href={`/jobs/${match.job.id}`}
+                        className="hover:underline"
+                      >
+                        {match.job.title}
+                      </Link>
+                    </h2>
+
                     <p className="text-sm text-gray-600">{match.job.company}</p>
                     <p className="mt-1 text-sm text-gray-500">
                       {match.job.location || "No location"} •{" "}

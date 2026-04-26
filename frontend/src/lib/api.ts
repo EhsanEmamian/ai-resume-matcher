@@ -169,3 +169,7 @@ export async function getJobs(
   );
   return handleResponse<JobsListResponse>(response);
 }
+export async function getJob(jobId: string): Promise<JobItem> {
+  const response = await fetch(`${API_BASE_URL}/jobs/${jobId}`);
+  return handleResponse<JobItem>(response);
+}
