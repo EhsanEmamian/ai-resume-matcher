@@ -134,6 +134,21 @@ export default function JobIngestionPanel() {
               <span className="font-semibold">Errors:</span> {result.errors}
             </p>
           </div>
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            <a
+              href="/jobs"
+              className="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white"
+            >
+              View Jobs
+            </a>
+            <a
+              href="#upload"
+              className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium"
+            >
+              Upload Resume Next
+            </a>
+          </div>
         </div>
       )}
     </section>
