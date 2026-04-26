@@ -1,7 +1,7 @@
 "use client";
 
-import { use, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { use, useEffect, useMemo, useState } from "react";
 import Header from "@/components/Header";
 import {
   generateMatches,
@@ -56,6 +56,21 @@ export default function MatchesPage({
     return matches.filter((match) => matchesFilter(match, filter));
   }, [matches, filter]);
 
+  const summary = useMemo(() => {
+    const strong = matches.filter((match) => match.score >= 0.7).length;
+    const moderate = matches.filter(
+      (match) => match.score >= 0.4 && match.score < 0.7
+    ).length;
+    const weak = matches.filter((match) => match.score < 0.4).length;
+
+    return {
+      total: matches.length,
+      strong,
+      moderate,
+      weak,
+    };
+  }, [matches]);
+
   if (loading) {
     return (
       <>
@@ -86,9 +101,7 @@ export default function MatchesPage({
                 Match Results
               </p>
               <h1 className="mt-2 text-3xl font-bold">Job Matches</h1>
-              <p className="mt-2 text-sm text-gray-600">
-                Resume ID: {resumeId}
-              </p>
+              <p className="mt-2 text-sm text-gray-600">Resume ID: {resumeId}</p>
             </div>
 
             <div className="rounded-2xl border border-gray-200 bg-gray-50 p-3">
@@ -116,15 +129,93 @@ export default function MatchesPage({
             </div>
           </div>
 
+          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Total
+              </p>
+              <p className="mt-2 text-3xl font-bold">{summary.total}</p>
+            </div>
+
+            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Strong
+              </p>
+              <p className="mt-2 text-3xl font-bold">{summary.strong}</p>
+            </div>
+
+            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Moderate
+              </p>
+              <p className="mt-2 text-3xl font-bold">{summary.moderate}</p>
+            </div>
+
+            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Weak
+              </p>
+              <p className="mt-2 text-3xl font-bold">{summary.weak}</p>
+            </div>
+          </section>
+
           <div className="text-sm text-gray-600">
-            Showing{" "}
-            <span className="font-semibold">{filteredMatches.length}</span> of{" "}
+            Showing <span className="font-semibold">{filteredMatches.length}</span> of{" "}
             <span className="font-semibold">{matches.length}</span> matches
           </div>
 
-          {filteredMatches.length === 0 ? (
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-6">
-              No matches found for this filter.
+          {matches.length === 0 ? (
+            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-6 shadow-sm">
+              <h2 className="text-lg font-semibold">No matches yet</h2>
+              <p className="mt-2 text-sm leading-6 text-gray-600">
+                This usually means there are no jobs in the system yet, or matching
+                has not produced any results for this resume.
+              </p>
+
+              <div className="mt-4 flex flex-wrap gap-3">
+                <Link
+                  href="/"
+                  className="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white"
+                >
+                  Import Jobs
+                </Link>
+                <Link
+                  href={`/profile/${resumeId}`}
+                  className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium"
+                >
+                  Back to Profile
+                </Link>
+                <Link
+                  href="/jobs"
+                  className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium"
+                >
+                  Browse Jobs
+                </Link>
+              </div>
+            </div>
+          ) : filteredMatches.length === 0 ? (
+            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-6 shadow-sm">
+              <h2 className="text-lg font-semibold">No matches for this filter</h2>
+              <p className="mt-2 text-sm leading-6 text-gray-600">
+                Try switching back to another filter, such as All or Weak, to see
+                more results.
+              </p>
+
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => setFilter("all")}
+                  className="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white"
+                >
+                  Show All Matches
+                </button>
+                <Link
+                  href="/jobs"
+                  className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium"
+                >
+                  Browse Jobs
+                </Link>
+              </div>
             </div>
           ) : (
             filteredMatches.map((match) => (
@@ -135,14 +226,10 @@ export default function MatchesPage({
                 <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <h2 className="text-xl font-semibold">
-                      <Link
-                        href={`/jobs/${match.job.id}`}
-                        className="hover:underline"
-                      >
+                      <Link href={`/jobs/${match.job.id}`} className="hover:underline">
                         {match.job.title}
                       </Link>
                     </h2>
-
                     <p className="text-sm text-gray-600">{match.job.company}</p>
                     <p className="mt-1 text-sm text-gray-500">
                       {match.job.location || "No location"} •{" "}

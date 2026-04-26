@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import Header from "@/components/Header";
 import { getResumeFull, type ResumeFullResponse } from "@/lib/api";
 
@@ -29,6 +29,25 @@ export default function ProfilePage({
 
     fetchResume();
   }, [resumeId]);
+
+  const matchSummary = useMemo(() => {
+    if (!data) {
+      return { total: 0, strong: 0, moderate: 0, weak: 0 };
+    }
+
+    const strong = data.matches.filter((match) => match.score >= 0.7).length;
+    const moderate = data.matches.filter(
+      (match) => match.score >= 0.4 && match.score < 0.7
+    ).length;
+    const weak = data.matches.filter((match) => match.score < 0.4).length;
+
+    return {
+      total: data.matches.length,
+      strong,
+      moderate,
+      weak,
+    };
+  }, [data]);
 
   if (loading) {
     return (
@@ -76,9 +95,93 @@ export default function ProfilePage({
               <p className="text-xs uppercase tracking-wide text-gray-300">
                 Current Matches
               </p>
-              <p className="text-2xl font-bold">{data.matches.length}</p>
+              <p className="text-2xl font-bold">{matchSummary.total}</p>
             </div>
           </div>
+
+          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Total
+              </p>
+              <p className="mt-2 text-3xl font-bold">{matchSummary.total}</p>
+            </div>
+
+            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Strong
+              </p>
+              <p className="mt-2 text-3xl font-bold">{matchSummary.strong}</p>
+            </div>
+
+            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Moderate
+              </p>
+              <p className="mt-2 text-3xl font-bold">{matchSummary.moderate}</p>
+            </div>
+
+            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Weak
+              </p>
+              <p className="mt-2 text-3xl font-bold">{matchSummary.weak}</p>
+            </div>
+          </section>
+
+          {matchSummary.total === 0 ? (
+            <section className="rounded-2xl border border-gray-200 bg-gray-50 p-6 shadow-sm">
+              <h2 className="text-lg font-semibold">No matches yet</h2>
+              <p className="mt-2 text-sm leading-6 text-gray-600">
+                Import jobs first, then open the matches page to generate ranked
+                results for this resume.
+              </p>
+
+              <div className="mt-4 flex flex-wrap gap-3">
+                <a
+                  href="/#upload"
+                  className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium"
+                >
+                  Upload Another Resume
+                </a>
+                <a
+                  href="/"
+                  className="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white"
+                >
+                  Import Jobs
+                </a>
+                <a
+                  href={`/matches/${data.id}`}
+                  className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium"
+                >
+                  Try Matches Anyway
+                </a>
+              </div>
+            </section>
+          ) : (
+            <section className="rounded-2xl border border-gray-200 bg-gray-50 p-6 shadow-sm">
+              <h2 className="text-lg font-semibold">Ready to review matches</h2>
+              <p className="mt-2 text-sm leading-6 text-gray-600">
+                This resume already has stored match results. Open the matches page
+                to review ranked jobs and score breakdowns.
+              </p>
+
+              <div className="mt-4 flex flex-wrap gap-3">
+                <a
+                  href={`/matches/${data.id}`}
+                  className="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white"
+                >
+                  View Matches
+                </a>
+                <a
+                  href="/jobs"
+                  className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium"
+                >
+                  Browse Jobs
+                </a>
+              </div>
+            </section>
+          )}
 
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="rounded-2xl border border-gray-200 bg-gray-50 p-6 shadow-sm">
