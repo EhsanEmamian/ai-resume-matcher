@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { use, useEffect, useMemo, useState } from "react";
 import Header from "@/components/Header";
 import { getResumeFull, type ResumeFullResponse } from "@/lib/api";
@@ -99,33 +100,52 @@ export default function ProfilePage({
             </div>
           </div>
 
-          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Total
-              </p>
-              <p className="mt-2 text-3xl font-bold">{matchSummary.total}</p>
-            </div>
+          <section className="overflow-hidden rounded-[2rem] border border-black/5 bg-white shadow-sm">
+            <div className="grid lg:grid-cols-[1fr_0.9fr]">
+              <div className="p-8">
+                <h2 className="text-2xl font-semibold tracking-tight">
+                  Parsed profile overview
+                </h2>
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-600">
+                  Review the extracted candidate profile before checking saved matches.
+                </p>
 
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Strong
-              </p>
-              <p className="mt-2 text-3xl font-bold">{matchSummary.strong}</p>
-            </div>
+                <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="rounded-2xl border border-black/5 bg-gray-50 p-5">
+                    <p className="text-xs uppercase tracking-[0.18em] text-gray-500">
+                      Total
+                    </p>
+                    <p className="mt-2 text-3xl font-bold">{matchSummary.total}</p>
+                  </div>
+                  <div className="rounded-2xl border border-black/5 bg-gray-50 p-5">
+                    <p className="text-xs uppercase tracking-[0.18em] text-gray-500">
+                      Strong
+                    </p>
+                    <p className="mt-2 text-3xl font-bold">{matchSummary.strong}</p>
+                  </div>
+                  <div className="rounded-2xl border border-black/5 bg-gray-50 p-5">
+                    <p className="text-xs uppercase tracking-[0.18em] text-gray-500">
+                      Moderate
+                    </p>
+                    <p className="mt-2 text-3xl font-bold">{matchSummary.moderate}</p>
+                  </div>
+                  <div className="rounded-2xl border border-black/5 bg-gray-50 p-5">
+                    <p className="text-xs uppercase tracking-[0.18em] text-gray-500">
+                      Weak
+                    </p>
+                    <p className="mt-2 text-3xl font-bold">{matchSummary.weak}</p>
+                  </div>
+                </div>
+              </div>
 
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Moderate
-              </p>
-              <p className="mt-2 text-3xl font-bold">{matchSummary.moderate}</p>
-            </div>
-
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Weak
-              </p>
-              <p className="mt-2 text-3xl font-bold">{matchSummary.weak}</p>
+              <div className="relative min-h-[300px] border-t border-black/5 bg-gray-50 lg:border-l lg:border-t-0">
+                <Image
+                  src="/images/profile-analysis-visual.png"
+                  alt="Profile analysis illustration"
+                  fill
+                  className="object-cover"
+                />
+              </div>
             </div>
           </section>
 

@@ -1,6 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
+import { Building2, Briefcase, MapPin, Search, SlidersHorizontal } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import Header from "@/components/Header";
 import { getJobs, type JobItem } from "@/lib/api";
@@ -123,44 +125,71 @@ export default function JobsPage() {
     <>
       <Header />
 
-      <main className="min-h-screen bg-white px-6 py-12 text-black">
+      <main className="min-h-screen bg-[linear-gradient(to_bottom,#ffffff,#f8f8f8)] px-6 py-12 text-black">
         <div className="mx-auto max-w-6xl space-y-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm uppercase tracking-[0.2em] text-gray-500">
-                Job Listings
-              </p>
-              <h1 className="mt-2 text-3xl font-bold">Available Jobs</h1>
-              <p className="mt-2 text-sm text-gray-600">
-                Showing {paginatedJobs.length} jobs on page {currentPage} of {totalPages}
-                {" "}• Filtered: {filteredJobs.length} • Backend total: {total}
-              </p>
+          <section className="rounded-[2rem] border border-black/5 bg-white p-8 shadow-sm">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-sm uppercase tracking-[0.2em] text-gray-500">
+                  Imported Job Pool
+                </p>
+                <h1 className="mt-2 text-4xl font-bold tracking-tight">
+                  Saved Jobs
+                </h1>
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-600">
+                  Browse jobs already stored in your local database. Use search,
+                  filters, sorting, and pagination to review the saved pool.
+                </p>
+              </div>
+
+              <Link
+                href="/live-jobs"
+                className="rounded-2xl bg-black px-5 py-3 text-sm font-medium text-white shadow-sm"
+              >
+                Open Live Search
+              </Link>
             </div>
 
-            <a
-              href="/"
-              className="rounded-xl border border-gray-300 px-5 py-2.5 text-sm font-medium"
-            >
-              Back to Home
-            </a>
-          </div>
+            <div className="mt-8 grid gap-4 sm:grid-cols-3">
+              <div className="rounded-2xl border border-black/5 bg-gray-50 p-5">
+                <p className="text-xs uppercase tracking-[0.18em] text-gray-500">
+                  Loaded
+                </p>
+                <p className="mt-2 text-3xl font-bold">{jobs.length}</p>
+              </div>
+              <div className="rounded-2xl border border-black/5 bg-gray-50 p-5">
+                <p className="text-xs uppercase tracking-[0.18em] text-gray-500">
+                  Filtered
+                </p>
+                <p className="mt-2 text-3xl font-bold">{filteredJobs.length}</p>
+              </div>
+              <div className="rounded-2xl border border-black/5 bg-gray-50 p-5">
+                <p className="text-xs uppercase tracking-[0.18em] text-gray-500">
+                  Backend Total
+                </p>
+                <p className="mt-2 text-3xl font-bold">{total}</p>
+              </div>
+            </div>
+          </section>
 
-          <section className="grid gap-4 rounded-2xl border border-gray-200 bg-gray-50 p-5 shadow-sm md:grid-cols-3">
+          <section className="grid gap-4 rounded-[2rem] border border-black/5 bg-white p-6 shadow-sm md:grid-cols-3">
             <div>
-              <label className="mb-1 block text-sm font-medium">
-                Search title, company, description, category, skills
+              <label className="mb-2 flex items-center gap-2 text-sm font-medium">
+                <Search size={16} />
+                Search jobs
               </label>
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search jobs..."
-                className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+                placeholder="Title, company, description, skills..."
+                className="block w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm"
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium">
-                Filter by source
+              <label className="mb-2 flex items-center gap-2 text-sm font-medium">
+                <Briefcase size={16} />
+                Source
               </label>
               <div className="flex flex-wrap gap-2">
                 {(["all", "manual", "adzuna"] as SourceFilter[]).map((value) => (
@@ -168,7 +197,7 @@ export default function JobsPage() {
                     key={value}
                     type="button"
                     onClick={() => setSourceFilter(value)}
-                    className={`rounded-xl px-3 py-2 text-sm font-medium transition ${
+                    className={`rounded-2xl px-4 py-2 text-sm font-medium transition ${
                       sourceFilter === value
                         ? "bg-black text-white"
                         : "border border-gray-300 bg-white text-black"
@@ -181,11 +210,14 @@ export default function JobsPage() {
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium">Sort by</label>
+              <label className="mb-2 flex items-center gap-2 text-sm font-medium">
+                <SlidersHorizontal size={16} />
+                Sort
+              </label>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortValue)}
-                className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+                className="block w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm"
               >
                 <option value="newest">Newest</option>
                 <option value="title">Title</option>
@@ -194,9 +226,43 @@ export default function JobsPage() {
             </div>
           </section>
 
+          <div className="text-sm text-gray-600">
+            Showing {paginatedJobs.length} jobs on page {currentPage} of {totalPages}
+          </div>
+
           {filteredJobs.length === 0 ? (
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-6">
-              No jobs found for the current filters.
+            <div className="overflow-hidden rounded-[2rem] border border-black/5 bg-white shadow-sm">
+              <div className="grid lg:grid-cols-[0.9fr_1.1fr]">
+                <div className="relative min-h-[280px] bg-gray-50">
+                  <Image
+                    src="/images/empty-no-imported-jobs.png"
+                    alt="No imported jobs illustration"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <div className="p-8">
+                  <h2 className="text-xl font-semibold">No imported jobs found</h2>
+                  <p className="mt-3 text-sm leading-6 text-gray-600">
+                    Try a different search, switch the source filter, or import more
+                    jobs from live search.
+                  </p>
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    <Link
+                      href="/live-jobs"
+                      className="rounded-2xl bg-black px-4 py-2 text-sm font-medium text-white"
+                    >
+                      Search Live Jobs
+                    </Link>
+                    <Link
+                      href="/"
+                      className="rounded-2xl border border-gray-300 px-4 py-2 text-sm font-medium"
+                    >
+                      Go Home
+                    </Link>
+                  </div>
+                </div>
+              </div>
             </div>
           ) : (
             <>
@@ -207,49 +273,49 @@ export default function JobsPage() {
                   : truncateText(job.description);
 
                 return (
-                  <div
+                  <article
                     key={job.id}
-                    className="rounded-2xl border border-gray-200 bg-gray-50 p-6 shadow-sm"
+                    className="rounded-[2rem] border border-black/5 bg-white p-6 shadow-sm"
                   >
-                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                       <div>
-                        <h2 className="text-xl font-semibold">
+                        <h2 className="text-2xl font-semibold tracking-tight">
                           <Link href={`/jobs/${job.id}`} className="hover:underline">
                             {job.title}
                           </Link>
                         </h2>
-                        <p className="text-sm text-gray-600">{job.company}</p>
-                        <p className="mt-1 text-sm text-gray-500">
-                          {job.location || "No location"} •{" "}
-                          {job.remote ? "Remote" : "On-site"}
-                        </p>
+                        <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-600">
+                          <span className="inline-flex items-center gap-1">
+                            <Building2 size={15} />
+                            {job.company}
+                          </span>
+                          <span className="inline-flex items-center gap-1">
+                            <MapPin size={15} />
+                            {job.location || "No location"}
+                          </span>
+                          <span>{job.remote ? "Remote" : "On-site"}</span>
+                        </div>
                       </div>
 
-                      <div className="rounded-xl bg-black px-3 py-2 text-sm font-medium text-white">
+                      <div className="rounded-2xl bg-black px-4 py-2 text-sm font-medium text-white">
                         {job.source === "adzuna" ? "Adzuna" : "Manual"}
                       </div>
                     </div>
 
                     <div className="mb-4 grid gap-4 md:grid-cols-2">
-                      <div className="rounded-xl border border-gray-200 bg-white p-4 text-sm">
+                      <div className="rounded-2xl border border-black/5 bg-gray-50 p-4 text-sm">
                         <p className="mb-2 font-semibold">Required skills</p>
-                        <p className="text-gray-700">
+                        <p className="leading-6 text-gray-700">
                           {job.required_skills.length
                             ? job.required_skills.join(", ")
                             : "No structured skills available"}
                         </p>
                       </div>
 
-                      <div className="rounded-xl border border-gray-200 bg-white p-4 text-sm">
+                      <div className="rounded-2xl border border-black/5 bg-gray-50 p-4 text-sm">
                         <p className="mb-2 font-semibold">Metadata</p>
-                        <p>
-                          <span className="font-medium">Category:</span>{" "}
-                          {job.category || "-"}
-                        </p>
-                        <p>
-                          <span className="font-medium">Contract type:</span>{" "}
-                          {job.contract_type || "-"}
-                        </p>
+                        <p><span className="font-medium">Category:</span> {job.category || "-"}</p>
+                        <p><span className="font-medium">Contract type:</span> {job.contract_type || "-"}</p>
                         <p>
                           <span className="font-medium">Salary:</span>{" "}
                           {job.salary_min || job.salary_max
@@ -259,9 +325,9 @@ export default function JobsPage() {
                       </div>
                     </div>
 
-                    <div className="rounded-xl border border-gray-200 bg-white p-4 text-sm">
+                    <div className="rounded-2xl border border-black/5 bg-gray-50 p-4 text-sm">
                       <p className="mb-2 font-semibold">Job description</p>
-                      <p className="leading-6 text-gray-700">{descriptionToShow}</p>
+                      <p className="leading-7 text-gray-700">{descriptionToShow}</p>
 
                       {job.description.length > 220 && (
                         <button
@@ -286,11 +352,11 @@ export default function JobsPage() {
                         </a>
                       </div>
                     )}
-                  </div>
+                  </article>
                 );
               })}
 
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-[2rem] border border-black/5 bg-white p-4 shadow-sm">
                 <p className="text-sm text-gray-600">
                   Page {currentPage} of {totalPages}
                 </p>
@@ -300,7 +366,7 @@ export default function JobsPage() {
                     type="button"
                     onClick={() => setPage((prev) => Math.max(1, prev - 1))}
                     disabled={currentPage === 1}
-                    className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium disabled:opacity-50"
+                    className="rounded-2xl border border-gray-300 px-4 py-2 text-sm font-medium disabled:opacity-50"
                   >
                     Previous
                   </button>
@@ -311,7 +377,7 @@ export default function JobsPage() {
                       setPage((prev) => Math.min(totalPages, prev + 1))
                     }
                     disabled={currentPage === totalPages}
-                    className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium disabled:opacity-50"
+                    className="rounded-2xl border border-gray-300 px-4 py-2 text-sm font-medium disabled:opacity-50"
                   >
                     Next
                   </button>

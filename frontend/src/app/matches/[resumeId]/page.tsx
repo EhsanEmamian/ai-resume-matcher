@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { use, useEffect, useMemo, useState } from "react";
 import Header from "@/components/Header";
@@ -165,32 +166,44 @@ export default function MatchesPage({
           </div>
 
           {matches.length === 0 ? (
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-6 shadow-sm">
-              <h2 className="text-lg font-semibold">No matches yet</h2>
-              <p className="mt-2 text-sm leading-6 text-gray-600">
-                This usually means there are no jobs in the system yet, or matching
-                has not produced any results for this resume.
-              </p>
+            <div className="overflow-hidden rounded-[2rem] border border-black/5 bg-white shadow-sm">
+              <div className="grid lg:grid-cols-[0.9fr_1.1fr]">
+                <div className="relative min-h-[300px] bg-gray-50">
+                  <Image
+                    src="/images/empty-no-matches.png"
+                    alt="No matches illustration"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <div className="p-8">
+                  <h2 className="text-xl font-semibold">No matches yet</h2>
+                  <p className="mt-3 text-sm leading-6 text-gray-600">
+                    This usually means there are no suitable saved jobs yet, or
+                    matching has not produced any results for this resume.
+                  </p>
 
-              <div className="mt-4 flex flex-wrap gap-3">
-                <Link
-                  href="/"
-                  className="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white"
-                >
-                  Import Jobs
-                </Link>
-                <Link
-                  href={`/profile/${resumeId}`}
-                  className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium"
-                >
-                  Back to Profile
-                </Link>
-                <Link
-                  href="/jobs"
-                  className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium"
-                >
-                  Browse Jobs
-                </Link>
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    <Link
+                      href="/"
+                      className="rounded-2xl bg-black px-4 py-2 text-sm font-medium text-white"
+                    >
+                      Import Jobs
+                    </Link>
+                    <Link
+                      href={`/profile/${resumeId}`}
+                      className="rounded-2xl border border-gray-300 px-4 py-2 text-sm font-medium"
+                    >
+                      Back to Profile
+                    </Link>
+                    <Link
+                      href="/jobs"
+                      className="rounded-2xl border border-gray-300 px-4 py-2 text-sm font-medium"
+                    >
+                      Browse Jobs
+                    </Link>
+                  </div>
+                </div>
               </div>
             </div>
           ) : filteredMatches.length === 0 ? (

@@ -1,10 +1,46 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import JobIngestionPanel from "@/components/JobIngestionPanel";
 import { uploadAndParseResume } from "@/lib/api";
+
+function FeatureCard({
+  eyebrow,
+  title,
+  text,
+  imageSrc,
+  imageAlt,
+}: {
+  eyebrow: string;
+  title: string;
+  text: string;
+  imageSrc: string;
+  imageAlt: string;
+}) {
+  return (
+    <div className="overflow-hidden rounded-3xl border border-black/5 bg-white shadow-sm">
+      <div className="relative h-48 w-full bg-gray-100">
+        <Image
+          src={imageSrc}
+          alt={imageAlt}
+          fill
+          className="object-cover"
+        />
+      </div>
+
+      <div className="p-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">
+          {eyebrow}
+        </p>
+        <h3 className="mt-3 text-lg font-semibold tracking-tight">{title}</h3>
+        <p className="mt-3 text-sm leading-6 text-gray-600">{text}</p>
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
@@ -37,119 +73,122 @@ export default function Home() {
     <>
       <Header />
 
-      <main className="min-h-screen bg-white text-black">
-        <div className="mx-auto max-w-6xl space-y-8 px-6 py-12">
-          <section className="rounded-3xl border border-gray-200 bg-gray-50 p-8 shadow-sm">
-            <div className="grid gap-8 lg:grid-cols-[1.4fr_0.9fr] lg:items-center">
-              <div>
-                <p className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-gray-500">
-                  AI Resume Matcher
-                </p>
-                <h1 className="mb-4 text-4xl font-bold tracking-tight sm:text-5xl">
-                  Turn resume parsing and job matching into a usable workflow
+      <main className="min-h-screen bg-[linear-gradient(to_bottom,#ffffff,#f7f7f7)] text-black">
+        <div className="mx-auto max-w-6xl space-y-10 px-6 py-12">
+          <section className="relative overflow-hidden rounded-[2rem] border border-black/5 bg-white shadow-sm">
+            <div className="pointer-events-none absolute inset-0 opacity-20">
+              <Image
+                src="/images/abstract-grid-glow-bg.png"
+                alt="Abstract background"
+                fill
+                className="object-cover"
+                priority
+              />
+            </div>
+
+            <div className="relative grid gap-0 lg:grid-cols-[1.15fr_0.85fr]">
+              <div className="p-8 sm:p-10 lg:p-12">
+                <div className="inline-flex items-center rounded-full border border-black/10 bg-black/[0.03] px-3 py-1 text-xs font-medium text-gray-700">
+                  Full-stack product prototype
+                </div>
+
+                <h1 className="mt-6 max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
+                  Resume parsing, live job search, and explainable matching in one workflow
                 </h1>
-                <p className="max-w-2xl text-base leading-7 text-gray-600 sm:text-lg">
-                  Upload a PDF resume, extract a structured candidate profile,
-                  import real jobs from Adzuna, and review explainable job
-                  matches with score breakdowns.
+
+                <p className="mt-6 max-w-2xl text-base leading-8 text-gray-600 sm:text-lg">
+                  Upload a PDF resume, extract structured profile data, search live
+                  jobs from Adzuna, import selected postings, and review ranked
+                  job matches with transparent score breakdowns.
                 </p>
 
-                <div className="mt-6 flex flex-wrap gap-3">
-                  <a
-                    href="/jobs"
-                    className="rounded-xl bg-black px-5 py-2.5 text-sm font-medium text-white"
-                  >
-                    Browse Jobs
-                  </a>
+                <div className="mt-8 flex flex-wrap gap-3">
                   <a
                     href="#upload"
-                    className="rounded-xl border border-gray-300 px-5 py-2.5 text-sm font-medium"
+                    className="rounded-2xl bg-black px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:opacity-90"
                   >
                     Upload Resume
                   </a>
+                  <a
+                    href="/live-jobs"
+                    className="rounded-2xl border border-gray-300 bg-white px-5 py-3 text-sm font-medium transition hover:bg-gray-50"
+                  >
+                    Search Live Jobs
+                  </a>
+                </div>
+
+                <div className="mt-10 grid gap-4 sm:grid-cols-3">
+                  <div className="rounded-2xl border border-black/5 bg-white/80 p-4 backdrop-blur-sm">
+                    <p className="text-xs uppercase tracking-[0.18em] text-gray-500">
+                      Step 1
+                    </p>
+                    <p className="mt-2 text-sm font-medium">Import or search jobs</p>
+                  </div>
+                  <div className="rounded-2xl border border-black/5 bg-white/80 p-4 backdrop-blur-sm">
+                    <p className="text-xs uppercase tracking-[0.18em] text-gray-500">
+                      Step 2
+                    </p>
+                    <p className="mt-2 text-sm font-medium">Upload and parse resume</p>
+                  </div>
+                  <div className="rounded-2xl border border-black/5 bg-white/80 p-4 backdrop-blur-sm">
+                    <p className="text-xs uppercase tracking-[0.18em] text-gray-500">
+                      Step 3
+                    </p>
+                    <p className="mt-2 text-sm font-medium">Review match quality</p>
+                  </div>
                 </div>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
-                <div className="rounded-2xl border border-gray-200 bg-white p-5">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    Step 1
-                  </p>
-                  <h2 className="mt-2 text-lg font-semibold">Import jobs</h2>
-                  <p className="mt-2 text-sm leading-6 text-gray-600">
-                    Pull real job postings from Adzuna into your local backend.
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-gray-200 bg-white p-5">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    Step 2
-                  </p>
-                  <h2 className="mt-2 text-lg font-semibold">Upload resume</h2>
-                  <p className="mt-2 text-sm leading-6 text-gray-600">
-                    Parse a PDF resume into structured skills, technologies, and
-                    suggested roles.
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-gray-200 bg-white p-5">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    Step 3
-                  </p>
-                  <h2 className="mt-2 text-lg font-semibold">Review matches</h2>
-                  <p className="mt-2 text-sm leading-6 text-gray-600">
-                    See ranked jobs with match reasons, skill overlap, and score
-                    breakdown.
-                  </p>
-                </div>
+              <div className="relative min-h-[320px] border-t border-black/5 bg-gray-50/80 lg:border-l lg:border-t-0">
+                <Image
+                  src="/images/hero-dashboard-workflow.png"
+                  alt="AI resume matcher dashboard workflow illustration"
+                  fill
+                  className="object-cover"
+                  priority
+                />
               </div>
             </div>
           </section>
 
-          <section className="grid gap-6 md:grid-cols-3">
-            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Product Focus
-              </p>
-              <h3 className="mt-2 text-lg font-semibold">Resume parsing</h3>
-              <p className="mt-2 text-sm leading-6 text-gray-600">
-                Extracts structured profile data from uploaded PDF resumes.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Matching Logic
-              </p>
-              <h3 className="mt-2 text-lg font-semibold">Explainable scoring</h3>
-              <p className="mt-2 text-sm leading-6 text-gray-600">
-                Uses transparent score breakdowns instead of black-box ranking.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Real Data
-              </p>
-              <h3 className="mt-2 text-lg font-semibold">External job ingestion</h3>
-              <p className="mt-2 text-sm leading-6 text-gray-600">
-                Imports real jobs from Adzuna so the workflow feels closer to a
-                real product.
-              </p>
-            </div>
+          <section className="grid gap-5 md:grid-cols-3">
+            <FeatureCard
+              eyebrow="Parsing"
+              title="Resume to structured profile"
+              text="Transform uploaded PDF resumes into a profile containing extracted skills, technologies, and suggested roles."
+              imageSrc="/images/feature-resume-parsing.png"
+              imageAlt="Resume parsing illustration"
+            />
+            <FeatureCard
+              eyebrow="Search"
+              title="Live job discovery"
+              text="Search live Adzuna job data directly from the app instead of relying only on manually stored postings."
+              imageSrc="/images/feature-live-job-search.png"
+              imageAlt="Live job search illustration"
+            />
+            <FeatureCard
+              eyebrow="Matching"
+              title="Readable ranking logic"
+              text="Review why jobs matched through deterministic scoring, rule-based extraction, and visible score breakdowns."
+              imageSrc="/images/feature-explainable-matching.png"
+              imageAlt="Explainable matching illustration"
+            />
           </section>
 
           <section
             id="upload"
-            className="rounded-2xl border border-gray-200 bg-gray-50 p-6 shadow-sm"
+            className="rounded-[2rem] border border-black/5 bg-white p-8 shadow-sm"
           >
             <div className="mb-6">
               <p className="text-sm font-medium uppercase tracking-[0.2em] text-gray-500">
                 Resume Upload
               </p>
-              <h2 className="mt-2 text-2xl font-bold">Upload and parse a resume</h2>
-              <p className="mt-2 text-sm text-gray-600">
-                Upload a PDF resume and get a structured profile from the backend.
+              <h2 className="mt-2 text-3xl font-bold tracking-tight">
+                Upload and parse a resume
+              </h2>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-600">
+                Upload a PDF resume and generate a structured candidate profile
+                that can later be matched against saved jobs.
               </p>
             </div>
 
@@ -158,20 +197,20 @@ export default function Home() {
                 type="file"
                 accept="application/pdf"
                 onChange={(e) => setFile(e.target.files?.[0] || null)}
-                className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+                className="block w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm"
               />
 
               <button
                 type="submit"
                 disabled={loading}
-                className="rounded-xl bg-black px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50"
+                className="rounded-2xl bg-black px-5 py-3 text-sm font-medium text-white shadow-sm disabled:opacity-50"
               >
                 {loading ? "Uploading..." : "Upload and Parse"}
               </button>
             </form>
 
             {error && (
-              <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {error}
               </div>
             )}
