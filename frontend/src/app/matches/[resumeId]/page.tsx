@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { BarChart3, BriefcaseBusiness, MapPin, Sparkles, Target } from "lucide-react";
 import { use, useEffect, useMemo, useState } from "react";
 import Header from "@/components/Header";
 import {
@@ -16,6 +17,12 @@ function scoreLabel(score: number) {
   if (score >= 0.7) return "Strong Match";
   if (score >= 0.4) return "Moderate Match";
   return "Weak Match";
+}
+
+function scoreBadgeClass(score: number) {
+  if (score >= 0.7) return "bg-green-100 text-green-700";
+  if (score >= 0.4) return "bg-yellow-100 text-yellow-700";
+  return "bg-gray-100 text-gray-700";
 }
 
 function matchesFilter(match: MatchItem, filter: FilterValue) {
@@ -94,69 +101,81 @@ export default function MatchesPage({
     <>
       <Header />
 
-      <main className="min-h-screen bg-white px-6 py-12 text-black">
+      <main className="min-h-screen bg-[linear-gradient(to_bottom,#ffffff,#f8f8f8)] px-6 py-12 text-black">
         <div className="mx-auto max-w-5xl space-y-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm uppercase tracking-[0.2em] text-gray-500">
-                Match Results
-              </p>
-              <h1 className="mt-2 text-3xl font-bold">Job Matches</h1>
-              <p className="mt-2 text-sm text-gray-600">Resume ID: {resumeId}</p>
-            </div>
+          <section className="rounded-[2rem] border border-black/5 bg-white p-8 shadow-sm">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-sm uppercase tracking-[0.2em] text-gray-500">
+                  Match Results
+                </p>
+                <h1 className="mt-2 text-4xl font-bold tracking-tight">
+                  Job Matches
+                </h1>
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-600">
+                  Review ranked saved jobs, compare match quality, and inspect
+                  transparent score breakdowns for this resume.
+                </p>
+                <p className="mt-2 text-xs text-gray-500">Resume ID: {resumeId}</p>
+              </div>
 
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-3">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Filter by match quality
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {(["all", "strong", "moderate", "weak"] as FilterValue[]).map(
-                  (value) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => setFilter(value)}
-                      className={`rounded-xl px-3 py-2 text-sm font-medium transition ${
-                        filter === value
-                          ? "bg-black text-white"
-                          : "border border-gray-300 bg-white text-black"
-                      }`}
-                    >
-                      {value.charAt(0).toUpperCase() + value.slice(1)}
-                    </button>
-                  )
-                )}
+              <div className="rounded-2xl border border-black/5 bg-gray-50 p-3">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Filter by match quality
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {(["all", "strong", "moderate", "weak"] as FilterValue[]).map(
+                    (value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setFilter(value)}
+                        className={`rounded-2xl px-4 py-2 text-sm font-medium transition ${
+                          filter === value
+                            ? "bg-black text-white"
+                            : "border border-gray-300 bg-white text-black"
+                        }`}
+                      >
+                        {value.charAt(0).toUpperCase() + value.slice(1)}
+                      </button>
+                    )
+                  )}
+                </div>
               </div>
             </div>
-          </div>
 
-          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Total
-              </p>
-              <p className="mt-2 text-3xl font-bold">{summary.total}</p>
-            </div>
+            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-2xl border border-black/5 bg-gray-50 p-5">
+                <div className="flex items-center gap-2 text-gray-500">
+                  <BarChart3 size={16} />
+                  <p className="text-xs font-semibold uppercase tracking-wide">Total</p>
+                </div>
+                <p className="mt-3 text-3xl font-bold">{summary.total}</p>
+              </div>
 
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Strong
-              </p>
-              <p className="mt-2 text-3xl font-bold">{summary.strong}</p>
-            </div>
+              <div className="rounded-2xl border border-black/5 bg-gray-50 p-5">
+                <div className="flex items-center gap-2 text-gray-500">
+                  <Sparkles size={16} />
+                  <p className="text-xs font-semibold uppercase tracking-wide">Strong</p>
+                </div>
+                <p className="mt-3 text-3xl font-bold">{summary.strong}</p>
+              </div>
 
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Moderate
-              </p>
-              <p className="mt-2 text-3xl font-bold">{summary.moderate}</p>
-            </div>
+              <div className="rounded-2xl border border-black/5 bg-gray-50 p-5">
+                <div className="flex items-center gap-2 text-gray-500">
+                  <Target size={16} />
+                  <p className="text-xs font-semibold uppercase tracking-wide">Moderate</p>
+                </div>
+                <p className="mt-3 text-3xl font-bold">{summary.moderate}</p>
+              </div>
 
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Weak
-              </p>
-              <p className="mt-2 text-3xl font-bold">{summary.weak}</p>
+              <div className="rounded-2xl border border-black/5 bg-gray-50 p-5">
+                <div className="flex items-center gap-2 text-gray-500">
+                  <BriefcaseBusiness size={16} />
+                  <p className="text-xs font-semibold uppercase tracking-wide">Weak</p>
+                </div>
+                <p className="mt-3 text-3xl font-bold">{summary.weak}</p>
+              </div>
             </div>
           </section>
 
@@ -207,24 +226,24 @@ export default function MatchesPage({
               </div>
             </div>
           ) : filteredMatches.length === 0 ? (
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-6 shadow-sm">
-              <h2 className="text-lg font-semibold">No matches for this filter</h2>
-              <p className="mt-2 text-sm leading-6 text-gray-600">
+            <div className="rounded-[2rem] border border-black/5 bg-white p-8 shadow-sm">
+              <h2 className="text-xl font-semibold">No matches for this filter</h2>
+              <p className="mt-3 text-sm leading-6 text-gray-600">
                 Try switching back to another filter, such as All or Weak, to see
                 more results.
               </p>
 
-              <div className="mt-4 flex flex-wrap gap-3">
+              <div className="mt-5 flex flex-wrap gap-3">
                 <button
                   type="button"
                   onClick={() => setFilter("all")}
-                  className="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white"
+                  className="rounded-2xl bg-black px-4 py-2 text-sm font-medium text-white"
                 >
                   Show All Matches
                 </button>
                 <Link
                   href="/jobs"
-                  className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium"
+                  className="rounded-2xl border border-gray-300 px-4 py-2 text-sm font-medium"
                 >
                   Browse Jobs
                 </Link>
@@ -232,60 +251,70 @@ export default function MatchesPage({
             </div>
           ) : (
             filteredMatches.map((match) => (
-              <div
+              <article
                 key={match.id}
-                className="rounded-2xl border border-gray-200 bg-gray-50 p-6 shadow-sm"
+                className="rounded-[2rem] border border-black/5 bg-white p-6 shadow-sm"
               >
-                <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <h2 className="text-xl font-semibold">
+                    <h2 className="text-2xl font-semibold tracking-tight">
                       <Link href={`/jobs/${match.job.id}`} className="hover:underline">
                         {match.job.title}
                       </Link>
                     </h2>
-                    <p className="text-sm text-gray-600">{match.job.company}</p>
-                    <p className="mt-1 text-sm text-gray-500">
-                      {match.job.location || "No location"} •{" "}
-                      {match.job.remote ? "Remote" : "On-site"}
-                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-600">
+                      <span className="inline-flex items-center gap-1">
+                        <BriefcaseBusiness size={15} />
+                        {match.job.company}
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <MapPin size={15} />
+                        {match.job.location || "No location"}
+                      </span>
+                      <span>{match.job.remote ? "Remote" : "On-site"}</span>
+                    </div>
                   </div>
 
-                  <div className="min-w-[140px] rounded-2xl bg-black px-4 py-3 text-white">
+                  <div className="min-w-[170px] rounded-2xl bg-black px-4 py-3 text-white">
                     <p className="text-xs uppercase tracking-wide text-gray-300">
                       Match Score
                     </p>
-                    <p className="text-2xl font-bold">{match.score}</p>
-                    <p className="text-xs text-gray-300">
+                    <p className="mt-1 text-3xl font-bold">{match.score}</p>
+                    <span
+                      className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${scoreBadgeClass(
+                        match.score
+                      )}`}
+                    >
                       {scoreLabel(match.score)}
-                    </p>
+                    </span>
                   </div>
                 </div>
 
-                <div className="mb-4 rounded-xl border border-gray-200 bg-white p-4">
+                <div className="mb-4 rounded-2xl border border-black/5 bg-gray-50 p-4">
                   <p className="mb-2 text-sm font-semibold">Why this match?</p>
-                  <p className="text-sm text-gray-700">{match.reason}</p>
+                  <p className="text-sm leading-6 text-gray-700">{match.reason}</p>
                 </div>
 
                 <div className="mb-4 grid gap-4 md:grid-cols-2">
-                  <div className="rounded-xl border border-gray-200 bg-white p-4 text-sm">
+                  <div className="rounded-2xl border border-black/5 bg-gray-50 p-4 text-sm">
                     <p className="mb-2 font-semibold">Matched skills</p>
-                    <p className="text-gray-700">
+                    <p className="leading-6 text-gray-700">
                       {match.matched_skills?.length
                         ? match.matched_skills.join(", ")
                         : "No direct skill match"}
                     </p>
                   </div>
 
-                  <div className="rounded-xl border border-gray-200 bg-white p-4 text-sm">
+                  <div className="rounded-2xl border border-black/5 bg-gray-50 p-4 text-sm">
                     <p className="mb-2 font-semibold">Required skills</p>
-                    <p className="text-gray-700">
+                    <p className="leading-6 text-gray-700">
                       {match.job.required_skills.join(", ")}
                     </p>
                   </div>
                 </div>
 
                 {match.score_breakdown && (
-                  <div className="mb-4 rounded-xl border border-gray-200 bg-white p-4 text-sm">
+                  <div className="mb-4 rounded-2xl border border-black/5 bg-gray-50 p-4 text-sm">
                     <p className="mb-3 font-semibold">Score breakdown</p>
                     <div className="grid gap-2 sm:grid-cols-2">
                       <p>
@@ -308,20 +337,20 @@ export default function MatchesPage({
                   </div>
                 )}
 
-                <div className="rounded-xl border border-gray-200 bg-white p-4 text-sm">
+                <div className="rounded-2xl border border-black/5 bg-gray-50 p-4 text-sm">
                   <p className="mb-2 font-semibold">Job description</p>
-                  <p className="leading-6 text-gray-700">
+                  <p className="leading-7 text-gray-700">
                     {match.job.description}
                   </p>
                 </div>
-              </div>
+              </article>
             ))
           )}
 
           <div>
             <a
               href={`/profile/${resumeId}`}
-              className="rounded-xl border border-gray-300 px-5 py-2.5 text-sm font-medium"
+              className="rounded-2xl border border-gray-300 px-5 py-2.5 text-sm font-medium"
             >
               Back to Profile
             </a>
