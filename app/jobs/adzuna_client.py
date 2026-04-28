@@ -5,6 +5,7 @@ import httpx
 
 from app.config import settings
 from app.exceptions import AppError
+from app.jobs.skill_extractor import extract_skills_from_text
 
 
 class AdzunaClientError(AppError):
@@ -23,11 +24,19 @@ def _parse_posted_at(value: str | None) -> datetime | None:
 
 
 def _normalize_job(job: dict[str, Any]) -> dict[str, Any]:
+    title = job.get("title") or "Untitled Job"
+    description = job.get("description") or ""
+
+    extracted_skills = extract_skills_from_text(
+        title=title,
+        description=description,
+    )
+
     return {
-        "title": job.get("title") or "Untitled Job",
+        "title": title,
         "company": (job.get("company") or {}).get("display_name") or "Unknown Company",
-        "description": job.get("description") or "",
-        "required_skills": [],
+        "description": description,
+        "required_skills": extracted_skills,
         "location": (job.get("location") or {}).get("display_name"),
         "remote": False,
         "source": "adzuna",

@@ -1,7 +1,8 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import delete, select
+from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session, selectinload
 
 from app.jobs.models import JobPosting
@@ -94,23 +95,34 @@ def generate_matches_for_resume(db: Session, resume_id: uuid.UUID) -> list[Match
     if profile is None:
         raise ValueError(f"Resume profile for resume '{resume_id}' not found.")
 
-    jobs = db.scalars(select(JobPosting)).all()
-
-    db.execute(delete(MatchResult).where(MatchResult.resume_id == resume_id))
+    jobs = list(db.scalars(select(JobPosting)).all())
+    now = datetime.now(timezone.utc)
 
     for job in jobs:
         score, reason, breakdown, matched_skills = calculate_match_score(profile, job)
 
-        match = MatchResult(
+        stmt = insert(MatchResult).values(
             resume_id=resume_id,
             job_id=job.id,
             score=score,
             reason=reason,
             score_breakdown=breakdown,
             matched_skills=matched_skills,
-            matched_at=datetime.now(timezone.utc),
+            matched_at=now,
         )
-        db.add(match)
+
+        stmt = stmt.on_conflict_do_update(
+            index_elements=[MatchResult.resume_id, MatchResult.job_id],
+            set_={
+                "score": score,
+                "reason": reason,
+                "score_breakdown": breakdown,
+                "matched_skills": matched_skills,
+                "matched_at": now,
+            },
+        )
+
+        db.execute(stmt)
 
     db.commit()
 

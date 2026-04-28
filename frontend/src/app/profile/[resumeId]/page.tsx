@@ -2,9 +2,15 @@
 
 import Image from "next/image";
 import { BarChart3, FileText, Languages, Sparkles, Wrench } from "lucide-react";
-import { use, useEffect, useMemo, useState } from "react";
+import { use, useEffect, useMemo, useRef, useState } from "react";
 import Header from "@/components/Header";
-import { getResumeFull, type ResumeFullResponse } from "@/lib/api";
+import Footer from "@/components/Footer";
+import {
+  generateMatches,
+  getJobs,
+  getResumeFull,
+  type ResumeFullResponse,
+} from "@/lib/api";
 
 function InfoBlock({
   title,
@@ -16,12 +22,12 @@ function InfoBlock({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-black/5 bg-gray-50 p-4">
-      <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
-        <span className="text-gray-500">{icon}</span>
+    <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-4">
+      <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-200">
+        <span className="text-slate-400">{icon}</span>
         {title}
       </div>
-      <p className="text-sm leading-6 text-gray-700">{value || "-"}</p>
+      <p className="text-sm leading-6 text-slate-300">{value || "-"}</p>
     </div>
   );
 }
@@ -36,20 +42,42 @@ export default function ProfilePage({
   const [data, setData] = useState<ResumeFullResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isGeneratingMatches, setIsGeneratingMatches] = useState(false);
+  const [importedJobsCount, setImportedJobsCount] = useState(0);
+
+  const didRunRef = useRef(false);
 
   useEffect(() => {
-    async function fetchResume() {
+    if (didRunRef.current) return;
+    didRunRef.current = true;
+
+    async function fetchResumeAndMaybeGenerate() {
       try {
-        const result = await getResumeFull(resumeId);
+        const jobsResult = await getJobs(0, 1);
+        const totalJobs = jobsResult.total || 0;
+        setImportedJobsCount(totalJobs);
+
+        let result = await getResumeFull(resumeId);
+
+        const hasStoredMatches = (result.matches?.length || 0) > 0;
+
+        if (!hasStoredMatches && totalJobs > 0) {
+          setIsGeneratingMatches(true);
+          await generateMatches(resumeId);
+          result = await getResumeFull(resumeId);
+          setIsGeneratingMatches(false);
+        }
+
         setData(result);
       } catch (err: any) {
         setError(err.message || "Something went wrong.");
       } finally {
         setLoading(false);
+        setIsGeneratingMatches(false);
       }
     }
 
-    fetchResume();
+    fetchResumeAndMaybeGenerate();
   }, [resumeId]);
 
   const matchSummary = useMemo(() => {
@@ -75,7 +103,10 @@ export default function ProfilePage({
     return (
       <>
         <Header />
-        <main className="p-8">Loading profile...</main>
+        <main className="min-h-screen bg-[#0B1120] p-8 text-slate-200">
+          Loading profile...
+        </main>
+        <Footer />
       </>
     );
   }
@@ -84,7 +115,10 @@ export default function ProfilePage({
     return (
       <>
         <Header />
-        <main className="p-8 text-red-600">{error}</main>
+        <main className="min-h-screen bg-[#0B1120] p-8 text-red-300">
+          {error}
+        </main>
+        <Footer />
       </>
     );
   }
@@ -93,7 +127,10 @@ export default function ProfilePage({
     return (
       <>
         <Header />
-        <main className="p-8">No data found.</main>
+        <main className="min-h-screen bg-[#0B1120] p-8 text-slate-200">
+          No data found.
+        </main>
+        <Footer />
       </>
     );
   }
@@ -102,26 +139,26 @@ export default function ProfilePage({
     <>
       <Header />
 
-      <main className="min-h-screen bg-[linear-gradient(to_bottom,#ffffff,#f8f8f8)] px-6 py-12 text-black">
+      <main className="min-h-screen bg-[#0B1120] px-6 py-12 text-slate-100">
         <div className="mx-auto max-w-5xl space-y-8">
-          <section className="rounded-[2rem] border border-black/5 bg-white p-8 shadow-sm">
+          <section className="rounded-[2rem] border border-white/10 bg-[#111827] p-8 shadow-sm">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <p className="text-sm uppercase tracking-[0.2em] text-gray-500">
+                <p className="text-sm uppercase tracking-[0.2em] text-slate-400">
                   Resume Profile
                 </p>
                 <h1 className="mt-2 text-4xl font-bold tracking-tight">
                   {data.filename}
                 </h1>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-600">
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
                   Review the extracted candidate profile, inspect the raw resume
                   text, and move into saved match results when ready.
                 </p>
-                <p className="mt-2 text-xs text-gray-500">Resume ID: {data.id}</p>
+                <p className="mt-2 text-xs text-slate-500">Resume ID: {data.id}</p>
               </div>
 
-              <div className="rounded-2xl bg-black px-4 py-3 text-white">
-                <p className="text-xs uppercase tracking-wide text-gray-300">
+              <div className="rounded-2xl bg-[#3B82F6] px-4 py-3 text-white">
+                <p className="text-xs uppercase tracking-wide text-white/70">
                   Current Matches
                 </p>
                 <p className="mt-1 text-3xl font-bold">{matchSummary.total}</p>
@@ -129,32 +166,32 @@ export default function ProfilePage({
             </div>
 
             <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-2xl border border-black/5 bg-gray-50 p-5">
-                <div className="flex items-center gap-2 text-gray-500">
+              <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-5">
+                <div className="flex items-center gap-2 text-slate-400">
                   <BarChart3 size={16} />
                   <p className="text-xs font-semibold uppercase tracking-wide">Total</p>
                 </div>
                 <p className="mt-3 text-3xl font-bold">{matchSummary.total}</p>
               </div>
 
-              <div className="rounded-2xl border border-black/5 bg-gray-50 p-5">
-                <div className="flex items-center gap-2 text-gray-500">
+              <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-5">
+                <div className="flex items-center gap-2 text-slate-400">
                   <Sparkles size={16} />
                   <p className="text-xs font-semibold uppercase tracking-wide">Strong</p>
                 </div>
                 <p className="mt-3 text-3xl font-bold">{matchSummary.strong}</p>
               </div>
 
-              <div className="rounded-2xl border border-black/5 bg-gray-50 p-5">
-                <div className="flex items-center gap-2 text-gray-500">
+              <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-5">
+                <div className="flex items-center gap-2 text-slate-400">
                   <BarChart3 size={16} />
                   <p className="text-xs font-semibold uppercase tracking-wide">Moderate</p>
                 </div>
                 <p className="mt-3 text-3xl font-bold">{matchSummary.moderate}</p>
               </div>
 
-              <div className="rounded-2xl border border-black/5 bg-gray-50 p-5">
-                <div className="flex items-center gap-2 text-gray-500">
+              <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-5">
+                <div className="flex items-center gap-2 text-slate-400">
                   <FileText size={16} />
                   <p className="text-xs font-semibold uppercase tracking-wide">Weak</p>
                 </div>
@@ -163,13 +200,13 @@ export default function ProfilePage({
             </div>
           </section>
 
-          <section className="overflow-hidden rounded-[2rem] border border-black/5 bg-white shadow-sm">
+          <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#111827] shadow-sm">
             <div className="grid lg:grid-cols-[1fr_0.9fr]">
               <div className="p-8">
                 <h2 className="text-2xl font-semibold tracking-tight">
                   Parsed profile overview
                 </h2>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-600">
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
                   Structured fields extracted from the uploaded resume, ready to be
                   used for job matching and profile review.
                 </p>
@@ -198,23 +235,25 @@ export default function ProfilePage({
                 </div>
 
                 <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                  <div className="rounded-2xl border border-black/5 bg-gray-50 p-4">
-                    <p className="mb-1 text-sm font-semibold">Seniority</p>
-                    <p className="text-sm text-gray-700">
+                  <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-4">
+                    <p className="mb-1 text-sm font-semibold text-slate-200">Seniority</p>
+                    <p className="text-sm text-slate-300">
                       {data.profile?.seniority_level || "-"}
                     </p>
                   </div>
 
-                  <div className="rounded-2xl border border-black/5 bg-gray-50 p-4">
-                    <p className="mb-1 text-sm font-semibold">Years of experience</p>
-                    <p className="text-sm text-gray-700">
+                  <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-4">
+                    <p className="mb-1 text-sm font-semibold text-slate-200">
+                      Years of experience
+                    </p>
+                    <p className="text-sm text-slate-300">
                       {data.profile?.years_of_experience ?? "-"}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="relative min-h-[320px] border-t border-black/5 bg-gray-50 lg:border-l lg:border-t-0">
+              <div className="relative min-h-[320px] border-t border-white/10 bg-[#0f172a] lg:border-l lg:border-t-0">
                 <Image
                   src="/images/profile-analysis-visual.png"
                   alt="Profile analysis illustration"
@@ -225,39 +264,65 @@ export default function ProfilePage({
             </div>
           </section>
 
-          {matchSummary.total === 0 ? (
-            <section className="rounded-[2rem] border border-black/5 bg-white p-8 shadow-sm">
-              <h2 className="text-xl font-semibold">No matches yet</h2>
-              <p className="mt-3 text-sm leading-6 text-gray-600">
-                Import jobs first, then open the matches page to generate ranked
-                results for this resume.
+          {isGeneratingMatches ? (
+            <section className="rounded-[2rem] border border-white/10 bg-[#111827] p-8 shadow-sm">
+              <h2 className="text-xl font-semibold">Finding your best job matches...</h2>
+              <p className="mt-3 text-sm leading-6 text-slate-400">
+                Your profile has been parsed successfully. The system is now scoring
+                it against imported jobs.
+              </p>
+            </section>
+          ) : matchSummary.total === 0 && importedJobsCount === 0 ? (
+            <section className="rounded-[2rem] border border-white/10 bg-[#111827] p-8 shadow-sm">
+              <h2 className="text-xl font-semibold">No jobs to match against yet</h2>
+              <p className="mt-3 text-sm leading-6 text-slate-400">
+                Import jobs from Adzuna to see how your profile scores against real postings.
               </p>
 
               <div className="mt-5 flex flex-wrap gap-3">
                 <a
-                  href="/"
-                  className="rounded-2xl bg-black px-4 py-2 text-sm font-medium text-white"
+                  href="/live-jobs"
+                  className="rounded-2xl bg-[#3B82F6] px-4 py-2 text-sm font-medium text-white"
                 >
-                  Import Jobs
-                </a>
-                <a
-                  href={`/matches/${data.id}`}
-                  className="rounded-2xl border border-gray-300 px-4 py-2 text-sm font-medium"
-                >
-                  Try Matches Anyway
+                  Search Adzuna Jobs
                 </a>
                 <a
                   href="/#upload"
-                  className="rounded-2xl border border-gray-300 px-4 py-2 text-sm font-medium"
+                  className="rounded-2xl border border-white/10 px-4 py-2 text-sm font-medium text-slate-200"
                 >
                   Upload Another Resume
                 </a>
               </div>
             </section>
+          ) : matchSummary.total === 0 ? (
+            <section className="rounded-[2rem] border border-white/10 bg-[#111827] p-8 shadow-sm">
+              <h2 className="text-xl font-semibold">
+                Matches generated — but the fit is low for current job listings
+              </h2>
+              <p className="mt-3 text-sm leading-6 text-slate-400">
+                Try importing jobs with different keywords, or review the matches page
+                to inspect low-score results.
+              </p>
+
+              <div className="mt-5 flex flex-wrap gap-3">
+                <a
+                  href={`/matches/${data.id}`}
+                  className="rounded-2xl bg-[#3B82F6] px-4 py-2 text-sm font-medium text-white"
+                >
+                  View Matches
+                </a>
+                <a
+                  href="/live-jobs"
+                  className="rounded-2xl border border-white/10 px-4 py-2 text-sm font-medium text-slate-200"
+                >
+                  Search More Jobs
+                </a>
+              </div>
+            </section>
           ) : (
-            <section className="rounded-[2rem] border border-black/5 bg-white p-8 shadow-sm">
+            <section className="rounded-[2rem] border border-white/10 bg-[#111827] p-8 shadow-sm">
               <h2 className="text-xl font-semibold">Ready to review matches</h2>
-              <p className="mt-3 text-sm leading-6 text-gray-600">
+              <p className="mt-3 text-sm leading-6 text-slate-400">
                 This resume already has stored match results. Open the matches page
                 to review ranked jobs and score breakdowns.
               </p>
@@ -265,13 +330,13 @@ export default function ProfilePage({
               <div className="mt-5 flex flex-wrap gap-3">
                 <a
                   href={`/matches/${data.id}`}
-                  className="rounded-2xl bg-black px-4 py-2 text-sm font-medium text-white"
+                  className="rounded-2xl bg-[#3B82F6] px-4 py-2 text-sm font-medium text-white"
                 >
                   View Matches
                 </a>
                 <a
                   href="/jobs"
-                  className="rounded-2xl border border-gray-300 px-4 py-2 text-sm font-medium"
+                  className="rounded-2xl border border-white/10 px-4 py-2 text-sm font-medium text-slate-200"
                 >
                   Browse Jobs
                 </a>
@@ -279,14 +344,14 @@ export default function ProfilePage({
             </section>
           )}
 
-          <section className="rounded-[2rem] border border-black/5 bg-white p-8 shadow-sm">
+          <section className="rounded-[2rem] border border-white/10 bg-[#111827] p-8 shadow-sm">
             <h2 className="text-2xl font-semibold tracking-tight">Extracted Resume Text</h2>
-            <p className="mt-3 text-sm leading-6 text-gray-600">
+            <p className="mt-3 text-sm leading-6 text-slate-400">
               Raw text extracted from the uploaded PDF. Useful for debugging parser
               quality and understanding what the system actually received.
             </p>
 
-            <div className="mt-6 max-h-[420px] overflow-auto rounded-2xl border border-black/5 bg-gray-50 p-5 text-sm leading-7 text-gray-700">
+            <div className="mt-6 max-h-[420px] overflow-auto rounded-2xl border border-white/10 bg-[#0f172a] p-5 text-sm leading-7 text-slate-300">
               {data.raw_text || "No raw text available."}
             </div>
           </section>
@@ -294,19 +359,21 @@ export default function ProfilePage({
           <div className="flex flex-wrap gap-3">
             <a
               href={`/matches/${data.id}`}
-              className="rounded-2xl bg-black px-5 py-3 text-sm font-medium text-white"
+              className="rounded-2xl bg-[#3B82F6] px-5 py-3 text-sm font-medium text-white"
             >
               View Matches
             </a>
             <a
               href="/"
-              className="rounded-2xl border border-gray-300 px-5 py-3 text-sm font-medium"
+              className="rounded-2xl border border-white/10 px-5 py-3 text-sm font-medium text-slate-200"
             >
               Back Home
             </a>
           </div>
         </div>
       </main>
+
+      <Footer />
     </>
   );
 }

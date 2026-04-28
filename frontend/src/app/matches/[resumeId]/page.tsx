@@ -5,6 +5,7 @@ import Link from "next/link";
 import { BarChart3, BriefcaseBusiness, MapPin, Sparkles, Target } from "lucide-react";
 import { use, useEffect, useMemo, useState } from "react";
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import {
   generateMatches,
   getMatches,
@@ -20,9 +21,9 @@ function scoreLabel(score: number) {
 }
 
 function scoreBadgeClass(score: number) {
-  if (score >= 0.7) return "bg-green-100 text-green-700";
-  if (score >= 0.4) return "bg-yellow-100 text-yellow-700";
-  return "bg-gray-100 text-gray-700";
+  if (score >= 0.7) return "bg-emerald-500/15 text-emerald-300";
+  if (score >= 0.4) return "bg-amber-500/15 text-amber-300";
+  return "bg-slate-500/15 text-slate-300";
 }
 
 function matchesFilter(match: MatchItem, filter: FilterValue) {
@@ -83,7 +84,8 @@ export default function MatchesPage({
     return (
       <>
         <Header />
-        <main className="p-8">Loading matches...</main>
+        <main className="min-h-screen bg-[#0B1120] p-8 text-slate-200">Loading matches...</main>
+        <Footer />
       </>
     );
   }
@@ -92,7 +94,8 @@ export default function MatchesPage({
     return (
       <>
         <Header />
-        <main className="p-8 text-red-600">{error}</main>
+        <main className="min-h-screen bg-[#0B1120] p-8 text-red-300">{error}</main>
+        <Footer />
       </>
     );
   }
@@ -101,26 +104,26 @@ export default function MatchesPage({
     <>
       <Header />
 
-      <main className="min-h-screen bg-[linear-gradient(to_bottom,#ffffff,#f8f8f8)] px-6 py-12 text-black">
+      <main className="min-h-screen bg-[#0B1120] px-6 py-12 text-slate-100">
         <div className="mx-auto max-w-5xl space-y-6">
-          <section className="rounded-[2rem] border border-black/5 bg-white p-8 shadow-sm">
+          <section className="rounded-[2rem] border border-white/10 bg-[#111827] p-8 shadow-sm">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="text-sm uppercase tracking-[0.2em] text-gray-500">
+                <p className="text-sm uppercase tracking-[0.2em] text-slate-400">
                   Match Results
                 </p>
                 <h1 className="mt-2 text-4xl font-bold tracking-tight">
                   Job Matches
                 </h1>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-600">
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
                   Review ranked saved jobs, compare match quality, and inspect
                   transparent score breakdowns for this resume.
                 </p>
-                <p className="mt-2 text-xs text-gray-500">Resume ID: {resumeId}</p>
+                <p className="mt-2 text-xs text-slate-500">Resume ID: {resumeId}</p>
               </div>
 
-              <div className="rounded-2xl border border-black/5 bg-gray-50 p-3">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-3">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
                   Filter by match quality
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -132,8 +135,8 @@ export default function MatchesPage({
                         onClick={() => setFilter(value)}
                         className={`rounded-2xl px-4 py-2 text-sm font-medium transition ${
                           filter === value
-                            ? "bg-black text-white"
-                            : "border border-gray-300 bg-white text-black"
+                            ? "bg-[#3B82F6] text-white"
+                            : "border border-white/10 bg-[#111827] text-slate-200"
                         }`}
                       >
                         {value.charAt(0).toUpperCase() + value.slice(1)}
@@ -145,32 +148,32 @@ export default function MatchesPage({
             </div>
 
             <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-2xl border border-black/5 bg-gray-50 p-5">
-                <div className="flex items-center gap-2 text-gray-500">
+              <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-5">
+                <div className="flex items-center gap-2 text-slate-400">
                   <BarChart3 size={16} />
                   <p className="text-xs font-semibold uppercase tracking-wide">Total</p>
                 </div>
                 <p className="mt-3 text-3xl font-bold">{summary.total}</p>
               </div>
 
-              <div className="rounded-2xl border border-black/5 bg-gray-50 p-5">
-                <div className="flex items-center gap-2 text-gray-500">
+              <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-5">
+                <div className="flex items-center gap-2 text-slate-400">
                   <Sparkles size={16} />
                   <p className="text-xs font-semibold uppercase tracking-wide">Strong</p>
                 </div>
                 <p className="mt-3 text-3xl font-bold">{summary.strong}</p>
               </div>
 
-              <div className="rounded-2xl border border-black/5 bg-gray-50 p-5">
-                <div className="flex items-center gap-2 text-gray-500">
+              <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-5">
+                <div className="flex items-center gap-2 text-slate-400">
                   <Target size={16} />
                   <p className="text-xs font-semibold uppercase tracking-wide">Moderate</p>
                 </div>
                 <p className="mt-3 text-3xl font-bold">{summary.moderate}</p>
               </div>
 
-              <div className="rounded-2xl border border-black/5 bg-gray-50 p-5">
-                <div className="flex items-center gap-2 text-gray-500">
+              <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-5">
+                <div className="flex items-center gap-2 text-slate-400">
                   <BriefcaseBusiness size={16} />
                   <p className="text-xs font-semibold uppercase tracking-wide">Weak</p>
                 </div>
@@ -179,15 +182,15 @@ export default function MatchesPage({
             </div>
           </section>
 
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-slate-400">
             Showing <span className="font-semibold">{filteredMatches.length}</span> of{" "}
             <span className="font-semibold">{matches.length}</span> matches
           </div>
 
           {matches.length === 0 ? (
-            <div className="overflow-hidden rounded-[2rem] border border-black/5 bg-white shadow-sm">
+            <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#111827] shadow-sm">
               <div className="grid lg:grid-cols-[0.9fr_1.1fr]">
-                <div className="relative min-h-[300px] bg-gray-50">
+                <div className="relative min-h-[300px] bg-[#0f172a]">
                   <Image
                     src="/images/empty-no-matches.png"
                     alt="No matches illustration"
@@ -197,7 +200,7 @@ export default function MatchesPage({
                 </div>
                 <div className="p-8">
                   <h2 className="text-xl font-semibold">No matches yet</h2>
-                  <p className="mt-3 text-sm leading-6 text-gray-600">
+                  <p className="mt-3 text-sm leading-6 text-slate-400">
                     This usually means there are no suitable saved jobs yet, or
                     matching has not produced any results for this resume.
                   </p>
@@ -205,19 +208,19 @@ export default function MatchesPage({
                   <div className="mt-5 flex flex-wrap gap-3">
                     <Link
                       href="/"
-                      className="rounded-2xl bg-black px-4 py-2 text-sm font-medium text-white"
+                      className="rounded-2xl bg-[#3B82F6] px-4 py-2 text-sm font-medium text-white"
                     >
                       Import Jobs
                     </Link>
                     <Link
                       href={`/profile/${resumeId}`}
-                      className="rounded-2xl border border-gray-300 px-4 py-2 text-sm font-medium"
+                      className="rounded-2xl border border-white/10 px-4 py-2 text-sm font-medium text-slate-200"
                     >
                       Back to Profile
                     </Link>
                     <Link
                       href="/jobs"
-                      className="rounded-2xl border border-gray-300 px-4 py-2 text-sm font-medium"
+                      className="rounded-2xl border border-white/10 px-4 py-2 text-sm font-medium text-slate-200"
                     >
                       Browse Jobs
                     </Link>
@@ -226,9 +229,9 @@ export default function MatchesPage({
               </div>
             </div>
           ) : filteredMatches.length === 0 ? (
-            <div className="rounded-[2rem] border border-black/5 bg-white p-8 shadow-sm">
+            <div className="rounded-[2rem] border border-white/10 bg-[#111827] p-8 shadow-sm">
               <h2 className="text-xl font-semibold">No matches for this filter</h2>
-              <p className="mt-3 text-sm leading-6 text-gray-600">
+              <p className="mt-3 text-sm leading-6 text-slate-400">
                 Try switching back to another filter, such as All or Weak, to see
                 more results.
               </p>
@@ -237,13 +240,13 @@ export default function MatchesPage({
                 <button
                   type="button"
                   onClick={() => setFilter("all")}
-                  className="rounded-2xl bg-black px-4 py-2 text-sm font-medium text-white"
+                  className="rounded-2xl bg-[#3B82F6] px-4 py-2 text-sm font-medium text-white"
                 >
                   Show All Matches
                 </button>
                 <Link
                   href="/jobs"
-                  className="rounded-2xl border border-gray-300 px-4 py-2 text-sm font-medium"
+                  className="rounded-2xl border border-white/10 px-4 py-2 text-sm font-medium text-slate-200"
                 >
                   Browse Jobs
                 </Link>
@@ -253,7 +256,7 @@ export default function MatchesPage({
             filteredMatches.map((match) => (
               <article
                 key={match.id}
-                className="rounded-[2rem] border border-black/5 bg-white p-6 shadow-sm"
+                className="rounded-[2rem] border border-white/10 bg-[#111827] p-6 shadow-sm"
               >
                 <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
@@ -262,7 +265,7 @@ export default function MatchesPage({
                         {match.job.title}
                       </Link>
                     </h2>
-                    <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-600">
+                    <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-400">
                       <span className="inline-flex items-center gap-1">
                         <BriefcaseBusiness size={15} />
                         {match.job.company}
@@ -275,11 +278,11 @@ export default function MatchesPage({
                     </div>
                   </div>
 
-                  <div className="min-w-[170px] rounded-2xl bg-black px-4 py-3 text-white">
-                    <p className="text-xs uppercase tracking-wide text-gray-300">
+                  <div className="min-w-[170px] rounded-2xl bg-[#3B82F6] px-4 py-3 text-white">
+                    <p className="text-xs uppercase tracking-wide text-white/70">
                       Match Score
                     </p>
-                    <p className="mt-1 text-3xl font-bold">{match.score}</p>
+                    <p className="mt-1 font-mono text-3xl font-bold">{match.score}</p>
                     <span
                       className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${scoreBadgeClass(
                         match.score
@@ -290,33 +293,33 @@ export default function MatchesPage({
                   </div>
                 </div>
 
-                <div className="mb-4 rounded-2xl border border-black/5 bg-gray-50 p-4">
+                <div className="mb-4 rounded-2xl border border-white/10 bg-[#0f172a] p-4">
                   <p className="mb-2 text-sm font-semibold">Why this match?</p>
-                  <p className="text-sm leading-6 text-gray-700">{match.reason}</p>
+                  <p className="text-sm leading-6 text-slate-300">{match.reason}</p>
                 </div>
 
                 <div className="mb-4 grid gap-4 md:grid-cols-2">
-                  <div className="rounded-2xl border border-black/5 bg-gray-50 p-4 text-sm">
+                  <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-4 text-sm">
                     <p className="mb-2 font-semibold">Matched skills</p>
-                    <p className="leading-6 text-gray-700">
+                    <p className="font-mono text-xs leading-6 text-slate-300">
                       {match.matched_skills?.length
                         ? match.matched_skills.join(", ")
                         : "No direct skill match"}
                     </p>
                   </div>
 
-                  <div className="rounded-2xl border border-black/5 bg-gray-50 p-4 text-sm">
+                  <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-4 text-sm">
                     <p className="mb-2 font-semibold">Required skills</p>
-                    <p className="leading-6 text-gray-700">
+                    <p className="font-mono text-xs leading-6 text-slate-300">
                       {match.job.required_skills.join(", ")}
                     </p>
                   </div>
                 </div>
 
                 {match.score_breakdown && (
-                  <div className="mb-4 rounded-2xl border border-black/5 bg-gray-50 p-4 text-sm">
+                  <div className="mb-4 rounded-2xl border border-white/10 bg-[#0f172a] p-4 text-sm">
                     <p className="mb-3 font-semibold">Score breakdown</p>
-                    <div className="grid gap-2 sm:grid-cols-2">
+                    <div className="grid gap-2 sm:grid-cols-2 font-mono text-xs text-slate-300">
                       <p>
                         <span className="font-medium">Skill overlap:</span>{" "}
                         {match.score_breakdown.skill_overlap_score}
@@ -337,9 +340,9 @@ export default function MatchesPage({
                   </div>
                 )}
 
-                <div className="rounded-2xl border border-black/5 bg-gray-50 p-4 text-sm">
+                <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-4 text-sm">
                   <p className="mb-2 font-semibold">Job description</p>
-                  <p className="leading-7 text-gray-700">
+                  <p className="leading-7 text-slate-300">
                     {match.job.description}
                   </p>
                 </div>
@@ -350,13 +353,15 @@ export default function MatchesPage({
           <div>
             <a
               href={`/profile/${resumeId}`}
-              className="rounded-2xl border border-gray-300 px-5 py-2.5 text-sm font-medium"
+              className="rounded-2xl border border-white/10 px-5 py-2.5 text-sm font-medium text-slate-200"
             >
               Back to Profile
             </a>
           </div>
         </div>
       </main>
+
+      <Footer />
     </>
   );
 }
