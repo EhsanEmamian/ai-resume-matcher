@@ -134,7 +134,16 @@ export type ImportExternalJobResult = {
   job: JobItem;
 };
 
+export type ClearJobsBySourceResult = {
+  source: string;
+  deleted: number;
+};
+
 async function handleResponse<T>(response: Response): Promise<T> {
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
   const data = await response.json();
 
   if (!response.ok) {
@@ -212,6 +221,27 @@ export async function getJobs(
 export async function getJob(jobId: string): Promise<JobItem> {
   const response = await fetch(`${API_BASE_URL}/jobs/${jobId}`);
   return handleResponse<JobItem>(response);
+}
+
+export async function deleteJob(jobId: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/jobs/${jobId}`, {
+    method: "DELETE",
+  });
+
+  return handleResponse<void>(response);
+}
+
+export async function clearJobsBySource(
+  source: string
+): Promise<ClearJobsBySourceResult> {
+  const response = await fetch(
+    `${API_BASE_URL}/jobs/clear-by-source?source=${encodeURIComponent(source)}`,
+    {
+      method: "DELETE",
+    }
+  );
+
+  return handleResponse<ClearJobsBySourceResult>(response);
 }
 
 export async function searchExternalJobs(

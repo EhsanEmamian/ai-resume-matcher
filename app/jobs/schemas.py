@@ -117,3 +117,8 @@ class BackfillJobSkillsResult(BaseModel):
     total: int
     updated: int
     skipped: int
+
+
+class ClearJobsBySourceResult(BaseModel):
+    source: str
+    deleted: int

@@ -2,11 +2,16 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Building2, Briefcase, MapPin, Search, SlidersHorizontal } from "lucide-react";
+import { Building2, Briefcase, MapPin, Search, SlidersHorizontal, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { getJobs, type JobItem } from "@/lib/api";
+import {
+  clearJobsBySource,
+  deleteJob,
+  getJobs,
+  type JobItem,
+} from "@/lib/api";
 
 type SourceFilter = "all" | "manual" | "adzuna";
 type SortValue = "newest" | "title" | "company";
@@ -28,20 +33,23 @@ export default function JobsPage() {
   const [sortBy, setSortBy] = useState<SortValue>("newest");
   const [expandedJobIds, setExpandedJobIds] = useState<string[]>([]);
   const [page, setPage] = useState(1);
+  const [actionMessage, setActionMessage] = useState("");
+  const [busyJobId, setBusyJobId] = useState<string | null>(null);
+  const [isClearingAdzuna, setIsClearingAdzuna] = useState(false);
+
+  async function loadJobs() {
+    try {
+      const result = await getJobs(0, 100);
+      setJobs(result.items);
+      setTotal(result.total);
+    } catch (err: any) {
+      setError(err.message || "Failed to load jobs.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    async function loadJobs() {
-      try {
-        const result = await getJobs(0, 100);
-        setJobs(result.items);
-        setTotal(result.total);
-      } catch (err: any) {
-        setError(err.message || "Failed to load jobs.");
-      } finally {
-        setLoading(false);
-      }
-    }
-
     loadJobs();
   }, []);
 
@@ -51,6 +59,42 @@ export default function JobsPage() {
         ? prev.filter((id) => id !== jobId)
         : [...prev, jobId]
     );
+  }
+
+  async function handleDeleteJob(jobId: string) {
+    const confirmed = window.confirm("Delete this job?");
+    if (!confirmed) return;
+
+    setBusyJobId(jobId);
+    setActionMessage("");
+
+    try {
+      await deleteJob(jobId);
+      await loadJobs();
+      setActionMessage("Job deleted successfully.");
+    } catch (err: any) {
+      setError(err.message || "Failed to delete job.");
+    } finally {
+      setBusyJobId(null);
+    }
+  }
+
+  async function handleClearAdzunaJobs() {
+    const confirmed = window.confirm("Delete all Adzuna jobs?");
+    if (!confirmed) return;
+
+    setIsClearingAdzuna(true);
+    setActionMessage("");
+
+    try {
+      const result = await clearJobsBySource("adzuna");
+      await loadJobs();
+      setActionMessage(`${result.deleted} Adzuna jobs deleted.`);
+    } catch (err: any) {
+      setError(err.message || "Failed to clear Adzuna jobs.");
+    } finally {
+      setIsClearingAdzuna(false);
+    }
   }
 
   const filteredJobs = useMemo(() => {
@@ -144,12 +188,23 @@ export default function JobsPage() {
                 </p>
               </div>
 
-              <Link
-                href="/live-jobs"
-                className="rounded-2xl bg-[#3B82F6] px-5 py-3 text-sm font-medium text-white shadow-sm"
-              >
-                Open Live Search
-              </Link>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={handleClearAdzunaJobs}
+                  disabled={isClearingAdzuna}
+                  className="rounded-2xl border border-white/10 px-5 py-3 text-sm font-medium text-slate-200 disabled:opacity-50"
+                >
+                  {isClearingAdzuna ? "Clearing..." : "Clear Adzuna Jobs"}
+                </button>
+
+                <Link
+                  href="/live-jobs"
+                  className="rounded-2xl bg-[#3B82F6] px-5 py-3 text-sm font-medium text-white shadow-sm"
+                >
+                  Open Live Search
+                </Link>
+              </div>
             </div>
 
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
@@ -166,6 +221,12 @@ export default function JobsPage() {
                 <p className="mt-2 text-3xl font-bold">{total}</p>
               </div>
             </div>
+
+            {actionMessage && (
+              <div className="mt-5 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+                {actionMessage}
+              </div>
+            )}
           </section>
 
           <section className="grid gap-4 rounded-[2rem] border border-white/10 bg-[#111827] p-6 shadow-sm md:grid-cols-3">
@@ -291,8 +352,20 @@ export default function JobsPage() {
                         </div>
                       </div>
 
-                      <div className="rounded-2xl bg-[#3B82F6] px-4 py-2 text-sm font-medium text-white">
-                        {job.source === "adzuna" ? "Adzuna" : "Manual"}
+                      <div className="flex flex-col gap-2">
+                        <div className="rounded-2xl bg-[#3B82F6] px-4 py-2 text-sm font-medium text-white">
+                          {job.source === "adzuna" ? "Adzuna" : "Manual"}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteJob(job.id)}
+                          disabled={busyJobId === job.id}
+                          className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-300 disabled:opacity-50"
+                        >
+                          <Trash2 size={15} />
+                          {busyJobId === job.id ? "Deleting..." : "Delete"}
+                        </button>
                       </div>
                     </div>
 

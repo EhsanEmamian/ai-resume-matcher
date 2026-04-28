@@ -9,6 +9,7 @@ from app.jobs import ingestion, service
 from app.jobs.adzuna_client import search_jobs
 from app.jobs.schemas import (
     BackfillJobSkillsResult,
+    ClearJobsBySourceResult,
     ExternalJobRead,
     ExternalJobSearchRequest,
     ExternalJobSearchResult,
@@ -63,6 +64,20 @@ def backfill_job_skills(
 ) -> BackfillJobSkillsResult:
     result = service.backfill_job_skills(db)
     return BackfillJobSkillsResult(**result)
+
+
+@router.delete(
+    "/clear-by-source",
+    response_model=ClearJobsBySourceResult,
+    status_code=status.HTTP_200_OK,
+    summary="Delete all jobs for a specific source",
+)
+def clear_jobs_by_source(
+    source: str = Query(..., description="Source name, e.g. adzuna or manual"),
+    db: Session = Depends(get_db),
+) -> ClearJobsBySourceResult:
+    deleted = service.clear_jobs_by_source(db, source=source)
+    return ClearJobsBySourceResult(source=source, deleted=deleted)
 
 
 @router.post(

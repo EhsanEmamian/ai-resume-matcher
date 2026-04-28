@@ -1,4 +1,4 @@
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.jobs.models import JobPosting
@@ -107,3 +107,10 @@ def get_job(db: Session, job_id) -> JobPosting | None:
 def delete_job(db: Session, job: JobPosting) -> None:
     db.delete(job)
     db.commit()
+
+
+def clear_jobs_by_source(db: Session, source: str) -> int:
+    stmt = delete(JobPosting).where(JobPosting.source == source)
+    result = db.execute(stmt)
+    db.commit()
+    return result.rowcount or 0
