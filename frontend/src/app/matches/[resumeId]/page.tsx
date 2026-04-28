@@ -2,7 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { BarChart3, BriefcaseBusiness, MapPin, Sparkles, Target } from "lucide-react";
+import {
+  BarChart3,
+  BriefcaseBusiness,
+  MapPin,
+  Sparkles,
+  Target,
+} from "lucide-react";
 import { use, useEffect, useMemo, useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -21,9 +27,15 @@ function scoreLabel(score: number) {
 }
 
 function scoreBadgeClass(score: number) {
-  if (score >= 0.7) return "bg-emerald-500/15 text-emerald-300";
-  if (score >= 0.4) return "bg-amber-500/15 text-amber-300";
-  return "bg-slate-500/15 text-slate-300";
+  if (score >= 0.7) return "bg-emerald-500/15 text-emerald-300 border border-emerald-400/20";
+  if (score >= 0.4) return "bg-amber-500/15 text-amber-300 border border-amber-400/20";
+  return "bg-slate-500/15 text-slate-300 border border-slate-400/20";
+}
+
+function scoreBarClass(score: number) {
+  if (score >= 0.7) return "bg-emerald-400";
+  if (score >= 0.4) return "bg-amber-400";
+  return "bg-slate-400";
 }
 
 function matchesFilter(match: MatchItem, filter: FilterValue) {
@@ -31,6 +43,30 @@ function matchesFilter(match: MatchItem, filter: FilterValue) {
   if (filter === "strong") return match.score >= 0.7;
   if (filter === "moderate") return match.score >= 0.4 && match.score < 0.7;
   return match.score < 0.4;
+}
+
+function scorePercent(score: number) {
+  return Math.round(score * 100);
+}
+
+function SkillChip({
+  skill,
+  matched = false,
+}: {
+  skill: string;
+  matched?: boolean;
+}) {
+  return (
+    <span
+      className={`inline-flex rounded-full px-2.5 py-1 font-mono text-[11px] ${
+        matched
+          ? "border border-emerald-400/20 bg-emerald-500/10 text-emerald-300"
+          : "border border-white/10 bg-[#111827] text-slate-300"
+      }`}
+    >
+      {skill}
+    </span>
+  );
 }
 
 export default function MatchesPage({
@@ -84,7 +120,9 @@ export default function MatchesPage({
     return (
       <>
         <Header />
-        <main className="min-h-screen bg-[#0B1120] p-8 text-slate-200">Loading matches...</main>
+        <main className="min-h-screen bg-[#0B1120] p-8 text-slate-200">
+          Loading matches...
+        </main>
         <Footer />
       </>
     );
@@ -94,7 +132,9 @@ export default function MatchesPage({
     return (
       <>
         <Header />
-        <main className="min-h-screen bg-[#0B1120] p-8 text-red-300">{error}</main>
+        <main className="min-h-screen bg-[#0B1120] p-8 text-red-300">
+          {error}
+        </main>
         <Footer />
       </>
     );
@@ -278,18 +318,31 @@ export default function MatchesPage({
                     </div>
                   </div>
 
-                  <div className="min-w-[170px] rounded-2xl bg-[#3B82F6] px-4 py-3 text-white">
-                    <p className="text-xs uppercase tracking-wide text-white/70">
+                  <div className="min-w-[190px] rounded-2xl bg-[#0f172a] px-4 py-4 text-white border border-white/10">
+                    <p className="text-xs uppercase tracking-wide text-white/60">
                       Match Score
                     </p>
-                    <p className="mt-1 font-mono text-3xl font-bold">{match.score}</p>
-                    <span
-                      className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${scoreBadgeClass(
-                        match.score
-                      )}`}
-                    >
-                      {scoreLabel(match.score)}
-                    </span>
+                    <div className="mt-2 flex items-end justify-between gap-3">
+                      <p className="font-mono text-3xl font-bold">
+                        {scorePercent(match.score)}%
+                      </p>
+                      <span
+                        className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${scoreBadgeClass(
+                          match.score
+                        )}`}
+                      >
+                        {scoreLabel(match.score)}
+                      </span>
+                    </div>
+
+                    <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-white/10">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${scoreBarClass(
+                          match.score
+                        )}`}
+                        style={{ width: `${scorePercent(match.score)}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -300,42 +353,68 @@ export default function MatchesPage({
 
                 <div className="mb-4 grid gap-4 md:grid-cols-2">
                   <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-4 text-sm">
-                    <p className="mb-2 font-semibold">Matched skills</p>
-                    <p className="font-mono text-xs leading-6 text-slate-300">
-                      {match.matched_skills?.length
-                        ? match.matched_skills.join(", ")
-                        : "No direct skill match"}
-                    </p>
+                    <p className="mb-3 font-semibold">Matched skills</p>
+                    {match.matched_skills?.length ? (
+                      <div className="flex flex-wrap gap-2">
+                        {match.matched_skills.map((skill) => (
+                          <SkillChip key={skill} skill={skill} matched />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="leading-6 text-slate-300">No direct skill match</p>
+                    )}
                   </div>
 
                   <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-4 text-sm">
-                    <p className="mb-2 font-semibold">Required skills</p>
-                    <p className="font-mono text-xs leading-6 text-slate-300">
-                      {match.job.required_skills.join(", ")}
-                    </p>
+                    <p className="mb-3 font-semibold">Required skills</p>
+                    {match.job.required_skills.length ? (
+                      <div className="flex flex-wrap gap-2">
+                        {match.job.required_skills.map((skill) => (
+                          <SkillChip key={skill} skill={skill} />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="leading-6 text-slate-300">No structured skills listed</p>
+                    )}
                   </div>
                 </div>
 
                 {match.score_breakdown && (
                   <div className="mb-4 rounded-2xl border border-white/10 bg-[#0f172a] p-4 text-sm">
                     <p className="mb-3 font-semibold">Score breakdown</p>
-                    <div className="grid gap-2 sm:grid-cols-2 font-mono text-xs text-slate-300">
-                      <p>
-                        <span className="font-medium">Skill overlap:</span>{" "}
-                        {match.score_breakdown.skill_overlap_score}
-                      </p>
-                      <p>
-                        <span className="font-medium">Role overlap:</span>{" "}
-                        {match.score_breakdown.role_overlap_score}
-                      </p>
-                      <p>
-                        <span className="font-medium">Remote bonus:</span>{" "}
-                        {match.score_breakdown.remote_bonus}
-                      </p>
-                      <p>
-                        <span className="font-medium">Final score:</span>{" "}
-                        {match.score_breakdown.final_score}
-                      </p>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-xl border border-white/10 bg-[#111827] p-3">
+                        <p className="text-xs uppercase tracking-wide text-slate-500">
+                          Skill overlap
+                        </p>
+                        <p className="mt-2 font-mono text-lg text-slate-200">
+                          {scorePercent(match.score_breakdown.skill_overlap_score)}%
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-white/10 bg-[#111827] p-3">
+                        <p className="text-xs uppercase tracking-wide text-slate-500">
+                          Role overlap
+                        </p>
+                        <p className="mt-2 font-mono text-lg text-slate-200">
+                          {scorePercent(match.score_breakdown.role_overlap_score)}%
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-white/10 bg-[#111827] p-3">
+                        <p className="text-xs uppercase tracking-wide text-slate-500">
+                          Remote bonus
+                        </p>
+                        <p className="mt-2 font-mono text-lg text-slate-200">
+                          {scorePercent(match.score_breakdown.remote_bonus)}%
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-white/10 bg-[#111827] p-3">
+                        <p className="text-xs uppercase tracking-wide text-slate-500">
+                          Final score
+                        </p>
+                        <p className="mt-2 font-mono text-lg text-slate-200">
+                          {scorePercent(match.score_breakdown.final_score)}%
+                        </p>
+                      </div>
                     </div>
                   </div>
                 )}
