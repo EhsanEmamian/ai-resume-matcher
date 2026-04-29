@@ -9,18 +9,13 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Skeleton, SkeletonCard } from "@/components/Skeleton";
 import AlertBanner from "@/components/AlertBanner";
+import { LOCATIONS } from "@/lib/locations";
+import { filterJobTitleSuggestions } from "@/lib/jobTitleSuggestions";
 import {
   importExternalJob,
   searchExternalJobs,
   type ExternalJobItem,
 } from "@/lib/api";
-
-const COUNTRY_OPTIONS = [
-  { value: "de", label: "Germany (de)" },
-  { value: "at", label: "Austria (at)" },
-  { value: "gb", label: "United Kingdom (gb)" },
-  { value: "us", label: "United States (us)" },
-];
 
 const PRESET_SEARCHES = [
   { keyword: "software engineer", location: "Berlin", country: "de" },
@@ -51,6 +46,15 @@ export default function LiveJobsClient() {
   const [savedJobIds, setSavedJobIds] = useState<Record<string, string>>({});
   const [savingJobIds, setSavingJobIds] = useState<string[]>([]);
 
+  const availableCities = LOCATIONS[country]?.cities ?? [];
+  const keywordSuggestions = filterJobTitleSuggestions(keyword);
+  const showKeywordSuggestions =
+    keyword.trim().length > 0 &&
+    keywordSuggestions.length > 0 &&
+    !keywordSuggestions.some(
+      (item) => item.toLowerCase() === keyword.trim().toLowerCase()
+    );
+
   useEffect(() => {
     const keywordFromUrl = searchParams.get("keyword");
     const locationFromUrl = searchParams.get("location");
@@ -68,6 +72,12 @@ export default function LiveJobsClient() {
       setCountry(countryFromUrl);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (location && !availableCities.includes(location)) {
+      setLocation("");
+    }
+  }, [country, location, availableCities]);
 
   if (loading && !searched) {
     return (
@@ -197,7 +207,7 @@ export default function LiveJobsClient() {
               onSubmit={handleSubmit}
               className="grid gap-4 md:grid-cols-2 lg:grid-cols-5"
             >
-              <div className="lg:col-span-2">
+              <div className="relative lg:col-span-2">
                 <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-200">
                   <Search size={16} />
                   Keyword
@@ -207,7 +217,24 @@ export default function LiveJobsClient() {
                   onChange={(e) => setKeyword(e.target.value)}
                   className="block w-full rounded-2xl border border-white/10 bg-[#0f172a] px-4 py-3 text-sm text-slate-100"
                   placeholder="software engineer"
+                  autoComplete="off"
                 />
+
+                {showKeywordSuggestions && (
+                  <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-white/10 bg-[#111827] shadow-lg">
+                    {keywordSuggestions.map((suggestion) => (
+                      <button
+                        key={suggestion}
+                        type="button"
+                        onClick={() => setKeyword(suggestion)}
+                        className="block w-full border-b border-white/5 px-4 py-3 text-left text-sm text-slate-200 last:border-b-0 hover:bg-white/5"
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 <p className="mt-1 text-xs text-slate-500">
                   Broader searches often work better than narrow titles.
                 </p>
@@ -216,16 +243,22 @@ export default function LiveJobsClient() {
               <div>
                 <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-200">
                   <MapPin size={16} />
-                  Location
+                  City
                 </label>
-                <input
+                <select
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   className="block w-full rounded-2xl border border-white/10 bg-[#0f172a] px-4 py-3 text-sm text-slate-100"
-                  placeholder="Berlin or Vienna"
-                />
+                >
+                  <option value="">All cities</option>
+                  {availableCities.map((city) => (
+                    <option key={city} value={city}>
+                      {city}
+                    </option>
+                  ))}
+                </select>
                 <p className="mt-1 text-xs text-slate-500">
-                  Optional. Leave empty for broader results.
+                  Optional. Leave empty for broader country-wide results.
                 </p>
               </div>
 
@@ -239,9 +272,9 @@ export default function LiveJobsClient() {
                   onChange={(e) => setCountry(e.target.value)}
                   className="block w-full rounded-2xl border border-white/10 bg-[#0f172a] px-4 py-3 text-sm text-slate-100"
                 >
-                  {COUNTRY_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
+                  {Object.entries(LOCATIONS).map(([value, config]) => (
+                    <option key={value} value={value}>
+                      {config.label} ({value})
                     </option>
                   ))}
                 </select>
