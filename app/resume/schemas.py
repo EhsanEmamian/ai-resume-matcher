@@ -28,6 +28,10 @@ class ResumeRead(BaseModel):
     file_path: str
     raw_text: str
     uploaded_at: datetime
+    is_resume: bool | None = None
+    document_type: str | None = None
+    validation_confidence: float | None = None
+    rejection_reason: str | None = None
     profile: ResumeProfileRead | None = None
 
     model_config = {"from_attributes": True}
@@ -66,7 +70,22 @@ class ResumeFullResponse(BaseModel):
     file_path: str
     raw_text: str
     uploaded_at: datetime
+    is_resume: bool | None = None
+    document_type: str | None = None
+    validation_confidence: float | None = None
+    rejection_reason: str | None = None
     profile: ResumeProfileRead | None = None
     matches: list[MatchResultRead] = []
 
     model_config = {"from_attributes": True}
+
+
+class ResumeValidationRejectedResponse(BaseModel):
+    resume_id: uuid.UUID
+    filename: str
+    content_type: str
+    uploaded_at: datetime
+    is_resume: bool
+    document_type: str
+    validation_confidence: float
+    rejection_reason: str

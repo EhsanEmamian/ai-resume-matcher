@@ -1,8 +1,9 @@
 import uuid
 
-from fastapi import APIRouter, Depends, File, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from sqlalchemy.orm import Session
 
+from app.ai.resume_parser import ResumeAIUnavailableError
 from app.database import get_db
 from app.exceptions import AIParsingError, InvalidFileError, NotFoundError
 from app.resume import service
@@ -25,14 +26,24 @@ router = APIRouter()
     summary="Upload a PDF resume",
 )
 def upload_resume(
+    request: Request,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
 ) -> ResumeUploadResponse:
     try:
-        resume = service.create_resume(db, file)
+        resume = service.create_resume(
+            db,
+            file,
+            client_ip=request.client.host if request.client else None,
+        )
         return resume
     except service.ResumeUploadError as exc:
         raise InvalidFileError(str(exc)) from exc
+    except service.ResumeUploadLimitExceededError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=str(exc),
+        ) from exc
     except PDFExtractionError as exc:
         raise InvalidFileError(str(exc)) from exc
 
@@ -44,11 +55,16 @@ def upload_resume(
     summary="Upload a PDF resume and parse it immediately",
 )
 def upload_and_parse_resume(
+    request: Request,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
 ) -> ResumeUploadAndParseResponse:
     try:
-        resume, profile = service.create_and_parse_resume(db, file)
+        resume, profile = service.create_and_parse_resume(
+            db,
+            file,
+            client_ip=request.client.host if request.client else None,
+        )
         return ResumeUploadAndParseResponse(
             resume_id=resume.id,
             filename=resume.filename,
@@ -58,8 +74,28 @@ def upload_and_parse_resume(
         )
     except service.ResumeUploadError as exc:
         raise InvalidFileError(str(exc)) from exc
+    except service.ResumeUploadLimitExceededError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=str(exc),
+        ) from exc
     except PDFExtractionError as exc:
         raise InvalidFileError(str(exc)) from exc
+    except service.ResumeDocumentRejectedError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "message": str(exc),
+                "document_type": exc.document_type,
+                "confidence": exc.confidence,
+                "resume_id": str(exc.resume.id) if exc.resume else None,
+            },
+        ) from exc
+    except ResumeAIUnavailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
     except Exception as exc:
         raise AIParsingError(str(exc)) from exc
 
@@ -101,6 +137,10 @@ def get_resume_full(
         file_path=resume.file_path,
         raw_text=resume.raw_text,
         uploaded_at=resume.uploaded_at,
+        is_resume=resume.is_resume,
+        document_type=resume.document_type,
+        validation_confidence=resume.validation_confidence,
+        rejection_reason=resume.rejection_reason,
         profile=resume.profile,
         matches=matches,
     )
@@ -122,6 +162,21 @@ def parse_resume(
             resume_id=resume_id,
             profile=profile,
         )
+    except service.ResumeDocumentRejectedError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "message": str(exc),
+                "document_type": exc.document_type,
+                "confidence": exc.confidence,
+                "resume_id": str(exc.resume.id) if exc.resume else None,
+            },
+        ) from exc
+    except ResumeAIUnavailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
     except Exception as exc:
         message = str(exc)
         if "not found" in message.lower():

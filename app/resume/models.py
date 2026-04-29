@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -25,6 +25,11 @@ class Resume(Base):
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
     )
+    is_resume: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    document_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    validation_confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
+    rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    client_ip: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     profile: Mapped["ResumeProfile | None"] = relationship(
         back_populates="resume",

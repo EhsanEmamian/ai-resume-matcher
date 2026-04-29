@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AI Resume Matcher",
+  title: {
+    default: "AI Resume Matcher",
+    template: "AI Resume Matcher | %s",
+  },
   description: "Resume parsing, live job search, and explainable matching",
 };
 

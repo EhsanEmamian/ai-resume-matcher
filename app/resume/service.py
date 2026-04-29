@@ -1,5 +1,6 @@
 import shutil
 import uuid
+from datetime import datetime, time, timezone
 from pathlib import Path
 
 from fastapi import UploadFile
@@ -10,12 +11,32 @@ from app.ai.resume_parser import ResumeParsingError, parse_resume_with_ai
 from app.matching.models import MatchResult
 from app.resume.models import Resume, ResumeProfile
 from app.resume.pdf_extractor import PDFExtractionError, extract_text_from_pdf
+from app.resume.validation import ResumeValidationError, validate_resume_document
 
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
 class ResumeUploadError(Exception):
+    pass
+
+
+class ResumeDocumentRejectedError(Exception):
+    def __init__(
+        self,
+        message: str,
+        *,
+        document_type: str,
+        confidence: float,
+        resume: Resume | None = None,
+    ):
+        super().__init__(message)
+        self.document_type = document_type
+        self.confidence = confidence
+        self.resume = resume
+
+
+class ResumeUploadLimitExceededError(Exception):
     pass
 
 
@@ -40,10 +61,36 @@ def save_resume_file(upload_file: UploadFile) -> tuple[str, str]:
     return str(destination), unique_filename
 
 
-def create_resume(db: Session, upload_file: UploadFile) -> Resume:
+def _count_today_uploads_for_ip(db: Session, client_ip: str) -> int:
+    start_of_day = datetime.combine(
+        datetime.now(timezone.utc).date(),
+        time.min,
+        tzinfo=timezone.utc,
+    )
+
+    stmt = select(Resume).where(
+        Resume.client_ip == client_ip,
+        Resume.uploaded_at >= start_of_day,
+    )
+
+    return len(list(db.scalars(stmt).all()))
+
+
+def create_resume(
+    db: Session,
+    upload_file: UploadFile,
+    client_ip: str | None = None,
+) -> Resume:
     file_path = None
 
     try:
+        if client_ip:
+            today_uploads = _count_today_uploads_for_ip(db, client_ip)
+            if today_uploads >= 30:
+                raise ResumeUploadLimitExceededError(
+                    "Guest upload limit reached for today. Please try again tomorrow."
+                )
+
         file_path, _stored_name = save_resume_file(upload_file)
         raw_text = extract_text_from_pdf(file_path)
 
@@ -52,6 +99,7 @@ def create_resume(db: Session, upload_file: UploadFile) -> Resume:
             content_type=upload_file.content_type or "application/pdf",
             file_path=file_path,
             raw_text=raw_text,
+            client_ip=client_ip,
         )
 
         db.add(resume)
@@ -59,7 +107,7 @@ def create_resume(db: Session, upload_file: UploadFile) -> Resume:
         db.refresh(resume)
         return resume
 
-    except (ResumeUploadError, PDFExtractionError):
+    except (ResumeUploadError, ResumeUploadLimitExceededError, PDFExtractionError):
         db.rollback()
         if file_path:
             path = Path(file_path)
@@ -89,6 +137,26 @@ def parse_resume_profile(db: Session, resume_id: uuid.UUID) -> ResumeProfile:
     resume = db.get(Resume, resume_id)
     if resume is None:
         raise ResumeParsingError(f"Resume with id '{resume_id}' not found.")
+
+    validation = validate_resume_document(resume.raw_text)
+
+    resume.is_resume = validation.is_resume
+    resume.document_type = validation.document_type
+    resume.validation_confidence = validation.confidence
+    resume.rejection_reason = validation.rejection_reason
+
+    db.add(resume)
+    db.commit()
+    db.refresh(resume)
+
+    if not validation.is_resume:
+        raise ResumeDocumentRejectedError(
+            validation.rejection_reason
+            or "This document does not look like a resume or CV. Please upload a valid resume PDF.",
+            document_type=validation.document_type,
+            confidence=validation.confidence,
+            resume=resume,
+        )
 
     parsed_data = parse_resume_with_ai(resume.raw_text)
 
@@ -123,8 +191,12 @@ def parse_resume_profile(db: Session, resume_id: uuid.UUID) -> ResumeProfile:
     return profile
 
 
-def create_and_parse_resume(db: Session, upload_file: UploadFile) -> tuple[Resume, ResumeProfile]:
-    resume = create_resume(db, upload_file)
+def create_and_parse_resume(
+    db: Session,
+    upload_file: UploadFile,
+    client_ip: str | None = None,
+) -> tuple[Resume, ResumeProfile]:
+    resume = create_resume(db, upload_file, client_ip=client_ip)
     profile = parse_resume_profile(db, resume.id)
     return resume, profile
 

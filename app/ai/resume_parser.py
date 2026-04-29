@@ -1,10 +1,13 @@
 import json
 
 from app.ai.client import get_anthropic_client
-from app.ai.mock_resume_parser import parse_resume_with_mock
 
 
 class ResumeParsingError(Exception):
+    pass
+
+
+class ResumeAIUnavailableError(Exception):
     pass
 
 
@@ -36,6 +39,8 @@ Rules:
 - years_of_experience: integer or null if unclear
 - seniority_level: one of "junior", "mid", "senior", or null if unclear
 - suggested_roles: realistic job roles based on the resume
+- Do not guess or infer technologies, skills, languages, roles, seniority, or experience unless they are explicitly supported by the resume text.
+- If a field is unclear, return an empty array or null.
 
 Resume text:
 \"\"\"
@@ -91,5 +96,19 @@ def parse_resume_with_ai(raw_text: str) -> dict:
 
         return parsed
 
-    except Exception:
-        return parse_resume_with_mock(raw_text)
+    except ResumeParsingError:
+        raise
+    except Exception as exc:
+        message = str(exc).lower()
+
+        if "credit balance is too low" in message:
+            raise ResumeAIUnavailableError(
+                "AI resume parsing is temporarily unavailable. Please try again later or check API billing configuration."
+            ) from exc
+
+        if "api key" in message or "authentication" in message:
+            raise ResumeAIUnavailableError(
+                "AI resume parsing is temporarily unavailable due to AI provider configuration."
+            ) from exc
+
+        raise ResumeParsingError("Resume parsing failed. Please try again later.") from exc

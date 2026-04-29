@@ -139,6 +139,18 @@ export type ClearJobsBySourceResult = {
   deleted: number;
 };
 
+export class ApiError extends Error {
+  status: number;
+  detail: unknown;
+
+  constructor(message: string, status: number, detail: unknown) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.detail = detail;
+  }
+}
+
 async function handleResponse<T>(response: Response): Promise<T> {
   if (response.status === 204) {
     return undefined as T;
@@ -147,7 +159,16 @@ async function handleResponse<T>(response: Response): Promise<T> {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.detail || "Request failed.");
+    const detail = data?.detail;
+
+    const message =
+      typeof detail === "string"
+        ? detail
+        : typeof detail?.message === "string"
+          ? detail.message
+          : "Request failed.";
+
+    throw new ApiError(message, response.status, detail);
   }
 
   return data as T;
