@@ -3,7 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Search, Globe, MapPin, Save, BriefcaseBusiness } from "lucide-react";
+import {
+  Search,
+  Globe,
+  MapPin,
+  Save,
+  BriefcaseBusiness,
+  ArrowUpRight,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -32,6 +39,9 @@ function truncateText(text: string, maxLength = 260) {
 export default function LiveJobsClient() {
   const searchParams = useSearchParams();
 
+  const [didAutoSearch, setDidAutoSearch] = useState(false);
+  const [prefilledFromUrl, setPrefilledFromUrl] = useState(false);
+
   const [keyword, setKeyword] = useState("software engineer");
   const [location, setLocation] = useState("");
   const [country, setCountry] = useState("de");
@@ -59,6 +69,7 @@ export default function LiveJobsClient() {
     const keywordFromUrl = searchParams.get("keyword");
     const locationFromUrl = searchParams.get("location");
     const countryFromUrl = searchParams.get("country");
+    const autoFromUrl = searchParams.get("auto");
 
     if (keywordFromUrl) {
       setKeyword(keywordFromUrl);
@@ -71,6 +82,10 @@ export default function LiveJobsClient() {
     if (countryFromUrl) {
       setCountry(countryFromUrl);
     }
+
+    if (autoFromUrl === "1" && keywordFromUrl) {
+      setPrefilledFromUrl(true);
+    }
   }, [searchParams]);
 
   useEffect(() => {
@@ -78,33 +93,6 @@ export default function LiveJobsClient() {
       setLocation("");
     }
   }, [country, location, availableCities]);
-
-  if (loading && !searched) {
-    return (
-      <>
-        <Header />
-        <main className="min-h-screen bg-[#0B1120] px-6 py-12 text-slate-100">
-          <div className="mx-auto max-w-6xl space-y-6">
-            <div className="rounded-[2rem] border border-white/10 bg-[#111827] p-8 shadow-sm">
-              <Skeleton className="h-4 w-48" />
-              <Skeleton className="mt-4 h-10 w-72" />
-              <Skeleton className="mt-4 h-5 w-2/3" />
-            </div>
-
-            <div className="rounded-[2rem] border border-white/10 bg-[#111827] p-6 shadow-sm">
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="mt-4 h-12 w-full" />
-              <Skeleton className="mt-4 h-12 w-full" />
-            </div>
-
-            <SkeletonCard />
-            <SkeletonCard />
-          </div>
-        </main>
-        <Footer />
-      </>
-    );
-  }
 
   function toggleExpanded(index: number) {
     setExpandedIndexes((prev) =>
@@ -151,6 +139,46 @@ export default function LiveJobsClient() {
     }
   }
 
+  async function runAutoSearch() {
+    setLoading(true);
+    setError("");
+    setSearched(false);
+    setExpandedIndexes([]);
+
+    try {
+      const data = await searchExternalJobs({
+        keyword,
+        location,
+        country,
+        max_results: maxResults,
+        page,
+      });
+
+      setResults(data.items);
+      setSearched(true);
+    } catch (err: any) {
+      setError(err.message || "Failed to search live jobs.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!prefilledFromUrl || didAutoSearch) return;
+    if (!keyword.trim()) return;
+
+    setDidAutoSearch(true);
+    runAutoSearch();
+  }, [
+    prefilledFromUrl,
+    didAutoSearch,
+    keyword,
+    location,
+    country,
+    maxResults,
+    page,
+  ]);
+
   async function handleSaveJob(job: ExternalJobItem, index: number) {
     const saveKey = `${job.source_id ?? "no-id"}-${index}`;
 
@@ -169,6 +197,33 @@ export default function LiveJobsClient() {
     }
   }
 
+  if (loading && !searched) {
+    return (
+      <>
+        <Header />
+        <main className="min-h-screen bg-[#0B1120] px-6 py-12 text-slate-100">
+          <div className="mx-auto max-w-6xl space-y-6">
+            <div className="rounded-[2rem] border border-white/10 bg-[#111827] p-8 shadow-sm">
+              <Skeleton className="h-4 w-48" />
+              <Skeleton className="mt-4 h-10 w-72" />
+              <Skeleton className="mt-4 h-5 w-2/3" />
+            </div>
+
+            <div className="rounded-[2rem] border border-white/10 bg-[#111827] p-6 shadow-sm">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="mt-4 h-12 w-full" />
+              <Skeleton className="mt-4 h-12 w-full" />
+            </div>
+
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
   return (
     <>
       <Header />
@@ -183,8 +238,9 @@ export default function LiveJobsClient() {
               Live Adzuna Search
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-400">
-              Search jobs live from Adzuna without importing them first. Save only
-              the jobs you actually want in your local database.
+              Search jobs live from Adzuna without importing them first. Live job
+              previews are lightweight for fast scanning. Full details and deeper
+              extraction become available after saving.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-2">
@@ -199,6 +255,11 @@ export default function LiveJobsClient() {
                   {preset.location ? ` • ${preset.location}` : ""}
                 </button>
               ))}
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-blue-400/20 bg-blue-500/10 px-4 py-3 text-sm text-blue-200">
+              Live job previews · Full details, requirements, languages,
+              experience, and salary extraction become available after saving.
             </div>
           </section>
 
@@ -420,51 +481,26 @@ export default function LiveJobsClient() {
                         className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-[#0f172a] px-4 py-2 text-sm font-medium text-slate-200 disabled:opacity-50"
                       >
                         <Save size={15} />
-                        {isSaved ? "Saved" : isSaving ? "Saving..." : "Save Job"}
+                        {isSaved
+                          ? "Saved"
+                          : isSaving
+                            ? "Saving..."
+                            : "Save & Analyze"}
                       </button>
 
                       {savedJobId && (
                         <Link
                           href={`/jobs/${savedJobId}`}
-                          className="rounded-2xl border border-white/10 px-4 py-2 text-center text-sm font-medium text-slate-200 hover:bg-white/5"
+                          className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-2 text-center text-sm font-medium text-emerald-300 hover:bg-emerald-500/15"
                         >
-                          View Saved Job
+                          Saved · View Analysis
                         </Link>
                       )}
                     </div>
                   </div>
 
-                  <div className="mb-4 grid gap-4 md:grid-cols-2">
-                    <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-4 text-sm">
-                      <p className="mb-2 font-semibold">Metadata</p>
-                      <p>
-                        <span className="font-medium">Category:</span>{" "}
-                        {job.category || "Not specified"}
-                      </p>
-                      <p>
-                        <span className="font-medium">Contract type:</span>{" "}
-                        {job.contract_type || "Not specified"}
-                      </p>
-                      <p>
-                        <span className="font-medium">Salary:</span>{" "}
-                        {job.salary_min || job.salary_max
-                          ? `${job.salary_min ?? "-"} - ${job.salary_max ?? "-"}`
-                          : "Not provided"}
-                      </p>
-                    </div>
-
-                    <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-4 text-sm">
-                      <p className="mb-2 font-semibold">Structured skills</p>
-                      <p className="leading-6 text-slate-300">
-                        {job.required_skills.length
-                          ? job.required_skills.join(", ")
-                          : "No structured skills available"}
-                      </p>
-                    </div>
-                  </div>
-
                   <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-4 text-sm">
-                    <p className="mb-2 font-semibold">Job description</p>
+                    <p className="mb-2 font-semibold">Preview</p>
                     <p className="leading-7 text-slate-300">
                       {descriptionToShow}
                     </p>
@@ -486,9 +522,10 @@ export default function LiveJobsClient() {
                         href={job.source_url}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-sm font-medium text-[#60A5FA] hover:underline"
+                        className="inline-flex items-center gap-1 text-sm font-medium text-[#60A5FA] hover:underline"
                       >
-                        Open original job source
+                        <ArrowUpRight size={14} />
+                        View original posting
                       </a>
                     </div>
                   )}

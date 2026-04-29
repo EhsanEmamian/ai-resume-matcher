@@ -5,7 +5,12 @@ import httpx
 
 from app.config import settings
 from app.exceptions import AppError
-from app.jobs.skill_extractor import extract_skills_from_text
+from app.jobs.skill_extractor import (
+    extract_experience_requirement_from_text,
+    extract_languages_from_text,
+    extract_salary_text_from_text,
+    extract_skills_from_text,
+)
 
 
 class AdzunaClientError(AppError):
@@ -31,12 +36,27 @@ def _normalize_job(job: dict[str, Any]) -> dict[str, Any]:
         title=title,
         description=description,
     )
+    extracted_languages = extract_languages_from_text(
+        title=title,
+        description=description,
+    )
+    extracted_experience = extract_experience_requirement_from_text(
+        title=title,
+        description=description,
+    )
+    extracted_salary_text = extract_salary_text_from_text(
+        title=title,
+        description=description,
+    )
 
     return {
         "title": title,
         "company": (job.get("company") or {}).get("display_name") or "Unknown Company",
         "description": description,
         "required_skills": extracted_skills,
+        "required_languages": extracted_languages,
+        "experience_requirement": extracted_experience,
+        "salary_text": extracted_salary_text,
         "location": (job.get("location") or {}).get("display_name"),
         "remote": False,
         "source": "adzuna",

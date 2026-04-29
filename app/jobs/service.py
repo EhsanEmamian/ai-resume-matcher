@@ -3,7 +3,13 @@ from sqlalchemy.orm import Session
 
 from app.jobs.models import JobPosting
 from app.jobs.schemas import JobPostingCreate
-from app.jobs.skill_extractor import extract_skills_from_text
+from app.jobs.source_enricher import SourceEnrichmentError, fetch_source_text
+from app.jobs.skill_extractor import (
+    extract_experience_requirement_from_text,
+    extract_languages_from_text,
+    extract_salary_text_from_text,
+    extract_skills_from_text,
+)
 
 
 def create_job(db: Session, payload: JobPostingCreate) -> JobPosting:
@@ -12,6 +18,9 @@ def create_job(db: Session, payload: JobPostingCreate) -> JobPosting:
         company=payload.company,
         description=payload.description,
         required_skills=payload.required_skills,
+        required_languages=payload.required_languages,
+        experience_requirement=payload.experience_requirement,
+        salary_text=payload.salary_text,
         location=payload.location,
         remote=payload.remote,
         posted_at=payload.posted_at,
@@ -39,13 +48,50 @@ def import_external_job(db: Session, payload: dict) -> tuple[str, JobPosting]:
     if existing is not None:
         return "already_exists", existing
 
+    title = payload.get("title", "")
+    description = payload.get("description", "")
+    source_url = payload.get("source_url")
+
+    source_text = None
+    try:
+        if source_url:
+            source_text = fetch_source_text(source_url)
+    except SourceEnrichmentError:
+        source_text = None
+
+    extraction_text = source_text or description
+
     extracted_skills = extract_skills_from_text(
-        title=payload.get("title", ""),
-        description=payload.get("description", ""),
+        title=title,
+        description=extraction_text,
     )
+    extracted_languages = extract_languages_from_text(
+        title=title,
+        description=extraction_text,
+    )
+    extracted_experience = extract_experience_requirement_from_text(
+        title=title,
+        description=extraction_text,
+    )
+    extracted_salary_text = extract_salary_text_from_text(
+        title=title,
+        description=extraction_text,
+    )
+
+    if source_text and not payload.get("source_text"):
+        payload["source_text"] = source_text
 
     if not payload.get("required_skills"):
         payload["required_skills"] = extracted_skills
+
+    if not payload.get("required_languages"):
+        payload["required_languages"] = extracted_languages
+
+    if not payload.get("experience_requirement"):
+        payload["experience_requirement"] = extracted_experience
+
+    if not payload.get("salary_text"):
+        payload["salary_text"] = extracted_salary_text
 
     job = JobPosting(**payload)
     db.add(job)
@@ -85,7 +131,11 @@ def backfill_job_skills(db: Session) -> dict:
     }
 
 
-def list_jobs(db: Session, skip: int = 0, limit: int = 20) -> tuple[int, list[JobPosting]]:
+def list_jobs(
+    db: Session,
+    skip: int = 0,
+    limit: int = 20,
+) -> tuple[int, list[JobPosting]]:
     total = db.scalar(select(func.count()).select_from(JobPosting)) or 0
 
     jobs = list(

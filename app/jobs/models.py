@@ -28,9 +28,18 @@ class JobPosting(Base):
         default=list,
         server_default="{}",
     )
+    required_languages: Mapped[list[str]] = mapped_column(
+        ARRAY(String),
+        nullable=False,
+        default=list,
+        server_default="{}",
+    )
+    experience_requirement: Mapped[str | None] = mapped_column(Text, nullable=True)
+    salary_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     location: Mapped[str | None] = mapped_column(String(255), nullable=True)
     remote: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-
+    source_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     source: Mapped[str] = mapped_column(
         String(50),
         nullable=False,

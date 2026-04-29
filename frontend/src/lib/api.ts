@@ -38,6 +38,9 @@ export type MatchItem = {
     company: string;
     description: string;
     required_skills: string[];
+    required_languages: string[];
+    experience_requirement: string | null;
+    salary_text: string | null;
     location: string | null;
     remote: boolean;
   };
@@ -77,9 +80,13 @@ export type JobItem = {
   company: string;
   description: string;
   required_skills: string[];
+  required_languages: string[];
+  experience_requirement: string | null;
+  salary_text: string | null;
   location: string | null;
   remote: boolean;
   source: string;
+  source_text: string | null;
   source_id: string | null;
   source_url: string | null;
   salary_min: number | null;
@@ -108,9 +115,13 @@ export type ExternalJobItem = {
   company: string;
   description: string;
   required_skills: string[];
+  required_languages: string[];
+  experience_requirement: string | null;
+  salary_text: string | null;
   location: string | null;
   remote: boolean;
   source: string;
+  source_text: string | null;
   source_id: string | null;
   source_url: string | null;
   salary_min: number | null;

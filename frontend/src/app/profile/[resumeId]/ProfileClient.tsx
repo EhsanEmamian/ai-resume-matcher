@@ -317,7 +317,7 @@ export default function ProfileClient({
                     key={suggestion.keyword}
                     href={`/live-jobs?keyword=${encodeURIComponent(
                       suggestion.keyword
-                    )}&country=de&location=`}
+                    )}&country=de&location=&auto=1`}
                     className="rounded-2xl border border-white/10 bg-[#0f172a] px-4 py-2 text-sm font-medium text-slate-200 hover:bg-white/5"
                   >
                     {suggestion.label}

@@ -5,6 +5,8 @@ import { use, useEffect, useState } from "react";
 import { Building2, MapPin, BriefcaseBusiness } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import AlertBanner from "@/components/AlertBanner";
+import { Skeleton } from "@/components/Skeleton";
 import { getJob, type JobItem } from "@/lib/api";
 
 export default function JobDetailClient({
@@ -37,8 +39,28 @@ export default function JobDetailClient({
     return (
       <>
         <Header />
-        <main className="min-h-screen bg-[#0B1120] p-8 text-slate-200">
-          Loading job details...
+        <main className="min-h-screen bg-[#0B1120] px-6 py-12 text-slate-100">
+          <div className="mx-auto max-w-5xl space-y-6">
+            <div className="rounded-[2rem] border border-white/10 bg-[#111827] p-8 shadow-sm">
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="mt-4 h-10 w-80" />
+              <Skeleton className="mt-4 h-5 w-2/3" />
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="rounded-[2rem] border border-white/10 bg-[#111827] p-6 shadow-sm">
+                <Skeleton className="h-40 w-full" />
+              </div>
+
+              <div className="rounded-[2rem] border border-white/10 bg-[#111827] p-6 shadow-sm">
+                <Skeleton className="h-40 w-full" />
+              </div>
+            </div>
+
+            <div className="rounded-[2rem] border border-white/10 bg-[#111827] p-6 shadow-sm">
+              <Skeleton className="h-64 w-full" />
+            </div>
+          </div>
         </main>
         <Footer />
       </>
@@ -49,8 +71,10 @@ export default function JobDetailClient({
     return (
       <>
         <Header />
-        <main className="min-h-screen bg-[#0B1120] p-8 text-red-300">
-          {error}
+        <main className="min-h-screen bg-[#0B1120] px-6 py-12 text-slate-100">
+          <div className="mx-auto max-w-4xl">
+            <AlertBanner variant="error">{error}</AlertBanner>
+          </div>
         </main>
         <Footer />
       </>
@@ -61,8 +85,10 @@ export default function JobDetailClient({
     return (
       <>
         <Header />
-        <main className="min-h-screen bg-[#0B1120] p-8 text-slate-200">
-          Job not found.
+        <main className="min-h-screen bg-[#0B1120] px-6 py-12 text-slate-100">
+          <div className="mx-auto max-w-4xl">
+            <AlertBanner variant="error">Job not found.</AlertBanner>
+          </div>
         </main>
         <Footer />
       </>
@@ -132,7 +158,17 @@ export default function JobDetailClient({
                   <span className="font-medium">Salary:</span>{" "}
                   {job.salary_min || job.salary_max
                     ? `${job.salary_min ?? "-"} - ${job.salary_max ?? "-"}`
+                    : job.salary_text || "-"}
+                </p>
+                <p>
+                  <span className="font-medium">Languages:</span>{" "}
+                  {job.required_languages.length
+                    ? job.required_languages.join(", ")
                     : "-"}
+                </p>
+                <p>
+                  <span className="font-medium">Experience:</span>{" "}
+                  {job.experience_requirement || "-"}
                 </p>
                 <p>
                   <span className="font-medium">Posted at:</span>{" "}

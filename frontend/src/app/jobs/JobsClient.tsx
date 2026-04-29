@@ -118,7 +118,10 @@ export default function JobsClient() {
         job.company,
         job.description,
         job.category ?? "",
+        job.experience_requirement ?? "",
+        job.salary_text ?? "",
         ...(job.required_skills ?? []),
+        ...(job.required_languages ?? []),
       ]
         .join(" ")
         .toLowerCase();
@@ -186,19 +189,19 @@ export default function JobsClient() {
     );
   }
 
-if (error) {
-  return (
-    <>
-      <Header />
-      <main className="min-h-screen bg-[#0B1120] px-6 py-12 text-slate-100">
-        <div className="mx-auto max-w-4xl">
-          <AlertBanner variant="error">{error}</AlertBanner>
-        </div>
-      </main>
-      <Footer />
-    </>
-  );
-}
+  if (error) {
+    return (
+      <>
+        <Header />
+        <main className="min-h-screen bg-[#0B1120] px-6 py-12 text-slate-100">
+          <div className="mx-auto max-w-4xl">
+            <AlertBanner variant="error">{error}</AlertBanner>
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
 
   return (
     <>
@@ -261,11 +264,11 @@ if (error) {
               </div>
             </div>
 
-                      {actionMessage && (
-                          <div className="mt-5">
-                              <AlertBanner variant="success">{actionMessage}</AlertBanner>
-                          </div>
-                      )}
+            {actionMessage && (
+              <div className="mt-5">
+                <AlertBanner variant="success">{actionMessage}</AlertBanner>
+              </div>
+            )}
           </section>
 
           <section className="grid gap-4 rounded-[2rem] border border-white/10 bg-[#111827] p-6 shadow-sm md:grid-cols-3">
@@ -343,8 +346,8 @@ if (error) {
                     No imported jobs found
                   </h2>
                   <p className="mt-3 text-sm leading-6 text-slate-400">
-                    Try a different search, switch the source filter, or import more
-                    jobs from live search.
+                    Try a different search, switch the source filter, or import
+                    more jobs from live search.
                   </p>
                   <div className="mt-5 flex flex-wrap gap-3">
                     <Link
@@ -442,7 +445,17 @@ if (error) {
                             ? `${job.salary_min ?? "-"} - ${
                                 job.salary_max ?? "-"
                               }`
+                            : job.salary_text || "-"}
+                        </p>
+                        <p>
+                          <span className="font-medium">Languages:</span>{" "}
+                          {job.required_languages.length
+                            ? job.required_languages.join(", ")
                             : "-"}
+                        </p>
+                        <p>
+                          <span className="font-medium">Experience:</span>{" "}
+                          {job.experience_requirement || "-"}
                         </p>
                       </div>
                     </div>
