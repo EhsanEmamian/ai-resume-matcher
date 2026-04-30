@@ -117,6 +117,7 @@ export default function JobsClient() {
         job.title,
         job.company,
         job.description,
+        job.source_text ?? "",
         job.category ?? "",
         job.experience_requirement ?? "",
         job.salary_text ?? "",
@@ -370,9 +371,10 @@ export default function JobsClient() {
             <>
               {paginatedJobs.map((job) => {
                 const isExpanded = expandedJobIds.includes(job.id);
+                const fullJobText = job.source_text || job.description;
                 const descriptionToShow = isExpanded
-                  ? job.description
-                  : truncateText(job.description);
+                  ? fullJobText
+                  : truncateText(fullJobText);
 
                 return (
                   <article
@@ -460,13 +462,19 @@ export default function JobsClient() {
                       </div>
                     </div>
 
+                    {job.source_text && (
+                      <div className="mb-3 inline-flex rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300">
+                        Enriched from original source
+                      </div>
+                    )}
+
                     <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-4 text-sm">
                       <p className="mb-2 font-semibold">Job description</p>
                       <p className="leading-7 text-slate-300">
                         {descriptionToShow}
                       </p>
 
-                      {job.description.length > 220 && (
+                      {fullJobText.length > 220 && (
                         <button
                           type="button"
                           onClick={() => toggleExpanded(job.id)}

@@ -53,10 +53,22 @@ def import_external_job(db: Session, payload: dict) -> tuple[str, JobPosting]:
     source_url = payload.get("source_url")
 
     source_text = None
+
+    print("DEBUG import_external_job source:", source)
+    print("DEBUG import_external_job source_id:", source_id)
+    print("DEBUG import_external_job source_url:", source_url)
+
     try:
         if source_url:
             source_text = fetch_source_text(source_url)
-    except SourceEnrichmentError:
+            print(
+                "DEBUG import_external_job source_text length:",
+                len(source_text) if source_text else 0,
+            )
+        else:
+            print("DEBUG import_external_job no source_url")
+    except SourceEnrichmentError as exc:
+        print("DEBUG import_external_job enrichment failed:", exc)
         source_text = None
 
     extraction_text = source_text or description
@@ -111,9 +123,11 @@ def backfill_job_skills(db: Session) -> dict:
             skipped += 1
             continue
 
+        extraction_text = job.source_text or job.description or ""
+
         extracted_skills = extract_skills_from_text(
             title=job.title or "",
-            description=job.description or "",
+            description=extraction_text,
         )
 
         if extracted_skills:

@@ -18,6 +18,7 @@ import { Skeleton, SkeletonCard } from "@/components/Skeleton";
 import AlertBanner from "@/components/AlertBanner";
 import { LOCATIONS } from "@/lib/locations";
 import { filterJobTitleSuggestions } from "@/lib/jobTitleSuggestions";
+import { deriveLiveJobRationale } from "@/lib/liveJobRationale";
 import {
   importExternalJob,
   searchExternalJobs,
@@ -429,6 +430,12 @@ export default function LiveJobsClient() {
                 ? job.description
                 : truncateText(job.description);
 
+              const rationale = deriveLiveJobRationale({
+                keyword,
+                title: job.title,
+                description: job.description,
+              });
+
               const saveKey = `${job.source_id ?? "no-id"}-${index}`;
               const savedJobId = savedJobIds[saveKey];
               const isSaved = Boolean(savedJobId);
@@ -499,8 +506,24 @@ export default function LiveJobsClient() {
                     </div>
                   </div>
 
+                  {rationale.length > 0 && (
+                    <div className="mb-4 rounded-2xl border border-white/10 bg-[#0f172a] p-4 text-sm">
+                      <p className="mb-3 font-semibold">Why suggested</p>
+                      <div className="flex flex-wrap gap-2">
+                        {rationale.map((item) => (
+                          <span
+                            key={item}
+                            className="rounded-full border border-blue-400/20 bg-blue-500/10 px-2.5 py-1 text-xs font-medium text-blue-200"
+                          >
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-4 text-sm">
-                    <p className="mb-2 font-semibold">Preview</p>
+                    <p className="mb-2 font-semibold">Job preview</p>
                     <p className="leading-7 text-slate-300">
                       {descriptionToShow}
                     </p>

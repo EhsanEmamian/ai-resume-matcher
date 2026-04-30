@@ -95,6 +95,8 @@ export default function JobDetailClient({
     );
   }
 
+  const fullJobText = job.source_text || job.description;
+
   return (
     <>
       <Header />
@@ -171,6 +173,10 @@ export default function JobDetailClient({
                   {job.experience_requirement || "-"}
                 </p>
                 <p>
+                  <span className="font-medium">Source text:</span>{" "}
+                  {job.source_text ? "Available" : "Not available"}
+                </p>
+                <p>
                   <span className="font-medium">Posted at:</span>{" "}
                   {job.posted_at || "-"}
                 </p>
@@ -178,9 +184,17 @@ export default function JobDetailClient({
             </div>
           </section>
 
+          {job.source_text && (
+            <div className="inline-flex rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300">
+              Enriched from original source
+            </div>
+          )}
+
           <section className="rounded-[2rem] border border-white/10 bg-[#111827] p-6 shadow-sm">
             <h2 className="mb-3 text-xl font-semibold">Job description</h2>
-            <p className="leading-8 text-slate-300">{job.description}</p>
+            <p className="whitespace-pre-line leading-8 text-slate-300">
+              {fullJobText}
+            </p>
           </section>
 
           {job.source_url && (
