@@ -87,6 +87,8 @@ export type JobItem = {
   remote: boolean;
   source: string;
   source_text: string | null;
+  enrichment_status: string | null;
+  enrichment_error: string | null;
   source_id: string | null;
   source_url: string | null;
   salary_min: number | null;
@@ -122,6 +124,8 @@ export type ExternalJobItem = {
   remote: boolean;
   source: string;
   source_text: string | null;
+  enrichment_status: string | null;
+  enrichment_error: string | null;
   source_id: string | null;
   source_url: string | null;
   salary_min: number | null;

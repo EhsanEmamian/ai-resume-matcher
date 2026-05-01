@@ -53,6 +53,8 @@ def import_external_job(db: Session, payload: dict) -> tuple[str, JobPosting]:
     source_url = payload.get("source_url")
 
     source_text = None
+    enrichment_status = "not_attempted"
+    enrichment_error = None
 
     print("DEBUG import_external_job source:", source)
     print("DEBUG import_external_job source_id:", source_id)
@@ -60,7 +62,15 @@ def import_external_job(db: Session, payload: dict) -> tuple[str, JobPosting]:
 
     try:
         if source_url:
+            enrichment_status = "attempted"
             source_text = fetch_source_text(source_url)
+
+            if source_text:
+                enrichment_status = "success"
+            else:
+                enrichment_status = "partial"
+                enrichment_error = "Original source text could not be extracted."
+
             print(
                 "DEBUG import_external_job source_text length:",
                 len(source_text) if source_text else 0,
@@ -70,6 +80,8 @@ def import_external_job(db: Session, payload: dict) -> tuple[str, JobPosting]:
     except SourceEnrichmentError as exc:
         print("DEBUG import_external_job enrichment failed:", exc)
         source_text = None
+        enrichment_status = "failed"
+        enrichment_error = str(exc)
 
     extraction_text = source_text or description
 
@@ -92,6 +104,12 @@ def import_external_job(db: Session, payload: dict) -> tuple[str, JobPosting]:
 
     if source_text and not payload.get("source_text"):
         payload["source_text"] = source_text
+
+    if not payload.get("enrichment_status"):
+        payload["enrichment_status"] = enrichment_status
+
+    if enrichment_error and not payload.get("enrichment_error"):
+        payload["enrichment_error"] = enrichment_error
 
     if not payload.get("required_skills"):
         payload["required_skills"] = extracted_skills

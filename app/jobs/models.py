@@ -40,6 +40,8 @@ class JobPosting(Base):
     location: Mapped[str | None] = mapped_column(String(255), nullable=True)
     remote: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     source_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    enrichment_status: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    enrichment_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     source: Mapped[str] = mapped_column(
         String(50),
         nullable=False,

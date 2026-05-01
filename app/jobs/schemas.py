@@ -27,6 +27,8 @@ class JobPostingRead(BaseModel):
     experience_requirement: str | None = None
     salary_text: str | None = None
     source_text: str | None = None
+    enrichment_status: str | None = None
+    enrichment_error: str | None = None
     location: str | None
     remote: bool
     source: str
@@ -81,6 +83,8 @@ class ExternalJobRead(BaseModel):
     experience_requirement: str | None = None
     salary_text: str | None = None
     source_text: str | None = None
+    enrichment_status: str | None = None
+    enrichment_error: str | None = None
     location: str | None
     remote: bool
     source: str
@@ -111,6 +115,8 @@ class ImportExternalJobRequest(BaseModel):
     experience_requirement: str | None = None
     salary_text: str | None = None
     source_text: str | None = None
+    enrichment_status: str | None = None
+    enrichment_error: str | None = None
     location: str | None = None
     remote: bool = False
     source: str

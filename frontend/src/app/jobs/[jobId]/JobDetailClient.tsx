@@ -184,11 +184,23 @@ export default function JobDetailClient({
             </div>
           </section>
 
-          {job.source_text && (
+          {job.enrichment_status === "success" ? (
             <div className="inline-flex rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300">
               Enriched from original source
             </div>
-          )}
+          ) : job.source === "adzuna" ? (
+            <div className="inline-flex rounded-full border border-amber-400/20 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-300">
+              Using source preview only
+            </div>
+          ) : null}
+
+          {job.enrichment_status === "failed" ||
+          job.enrichment_status === "partial" ? (
+            <div className="mt-3 rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+              Full extraction unavailable. This job is currently using a shorter
+              source preview.
+            </div>
+          ) : null}
 
           <section className="rounded-[2rem] border border-white/10 bg-[#111827] p-6 shadow-sm">
             <h2 className="mb-3 text-xl font-semibold">Job description</h2>

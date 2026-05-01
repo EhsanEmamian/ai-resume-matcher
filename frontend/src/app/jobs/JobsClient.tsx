@@ -462,11 +462,15 @@ export default function JobsClient() {
                       </div>
                     </div>
 
-                    {job.source_text && (
+                    {job.enrichment_status === "success" ? (
                       <div className="mb-3 inline-flex rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300">
                         Enriched from original source
                       </div>
-                    )}
+                    ) : job.source === "adzuna" ? (
+                      <div className="mb-3 inline-flex rounded-full border border-amber-400/20 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-300">
+                        Using source preview only
+                      </div>
+                    ) : null}
 
                     <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-4 text-sm">
                       <p className="mb-2 font-semibold">Job description</p>
