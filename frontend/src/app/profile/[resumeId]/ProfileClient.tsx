@@ -8,6 +8,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AlertBanner from "@/components/AlertBanner";
 import { Skeleton } from "@/components/Skeleton";
+import { buildProfileHints } from "@/lib/profileHints";
 import {
   generateMatches,
   getJobs,
@@ -106,6 +107,12 @@ export default function ProfileClient({
   const searchSuggestions = useMemo(() => {
     return deriveSearchSuggestions(data?.profile);
   }, [data?.profile]);
+
+  const profileHints = useMemo(() => {
+    return buildProfileHints(data?.profile);
+  }, [data?.profile]);
+
+  const profileHintsParam = encodeURIComponent(profileHints.join(","));
 
   if (loading) {
     return (
@@ -243,8 +250,8 @@ export default function ProfileClient({
                   Parsed profile overview
                 </h2>
                 <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
-                  Structured fields extracted from the uploaded resume, ready to be
-                  used for job matching and profile review.
+                  Structured fields extracted from the uploaded resume, ready to
+                  be used for job matching and profile review.
                 </p>
 
                 <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -308,7 +315,8 @@ export default function ProfileClient({
                 Find latest jobs based on this profile
               </h2>
               <p className="mt-3 text-sm leading-6 text-slate-400">
-                Based on the extracted profile, try one of these live job searches.
+                Based on the extracted profile, try one of these live job
+                searches.
               </p>
 
               <div className="mt-5 flex flex-wrap gap-3">
@@ -317,7 +325,7 @@ export default function ProfileClient({
                     key={suggestion.keyword}
                     href={`/live-jobs?keyword=${encodeURIComponent(
                       suggestion.keyword
-                    )}&country=de&location=&auto=1`}
+                    )}&country=de&location=&auto=1&hints=${profileHintsParam}`}
                     className="rounded-2xl border border-white/10 bg-[#0f172a] px-4 py-2 text-sm font-medium text-slate-200 hover:bg-white/5"
                   >
                     {suggestion.label}
@@ -350,8 +358,8 @@ export default function ProfileClient({
                 No jobs to match against yet
               </h2>
               <p className="mt-3 text-sm leading-6 text-slate-400">
-                Import jobs from Adzuna to see how your profile scores against real
-                postings.
+                Import jobs from Adzuna to see how your profile scores against
+                real postings.
               </p>
 
               <div className="mt-5 flex flex-wrap gap-3">
@@ -398,8 +406,8 @@ export default function ProfileClient({
             <section className="rounded-[2rem] border border-white/10 bg-[#111827] p-8 shadow-sm">
               <h2 className="text-xl font-semibold">Ready to review matches</h2>
               <p className="mt-3 text-sm leading-6 text-slate-400">
-                This resume already has stored match results. Open the matches page
-                to review ranked jobs and score breakdowns.
+                This resume already has stored match results. Open the matches
+                page to review ranked jobs and score breakdowns.
               </p>
 
               <div className="mt-5 flex flex-wrap gap-3">
@@ -424,8 +432,9 @@ export default function ProfileClient({
               Extracted Resume Text
             </h2>
             <p className="mt-3 text-sm leading-6 text-slate-400">
-              Raw text extracted from the uploaded PDF. Useful for debugging parser
-              quality and understanding what the system actually received.
+              Raw text extracted from the uploaded PDF. Useful for debugging
+              parser quality and understanding what the system actually
+              received.
             </p>
 
             <div className="mt-6 max-h-[420px] overflow-auto rounded-2xl border border-white/10 bg-[#0f172a] p-5 text-sm leading-7 text-slate-300">

@@ -48,6 +48,7 @@ export default function LiveJobsClient() {
   const [country, setCountry] = useState("de");
   const [maxResults, setMaxResults] = useState(10);
   const [page, setPage] = useState(1);
+  const [profileHints, setProfileHints] = useState<string[]>([]);
 
   const [results, setResults] = useState<ExternalJobItem[]>([]);
   const [searched, setSearched] = useState(false);
@@ -71,6 +72,7 @@ export default function LiveJobsClient() {
     const locationFromUrl = searchParams.get("location");
     const countryFromUrl = searchParams.get("country");
     const autoFromUrl = searchParams.get("auto");
+    const hintsFromUrl = searchParams.get("hints");
 
     if (keywordFromUrl) {
       setKeyword(keywordFromUrl);
@@ -82,6 +84,15 @@ export default function LiveJobsClient() {
 
     if (countryFromUrl) {
       setCountry(countryFromUrl);
+    }
+
+    if (hintsFromUrl) {
+      setProfileHints(
+        hintsFromUrl
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean)
+      );
     }
 
     if (autoFromUrl === "1" && keywordFromUrl) {
@@ -389,6 +400,22 @@ export default function LiveJobsClient() {
               returns 0 results, remove the location first.
             </div>
 
+            {profileHints.length > 0 && (
+              <div className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-4 text-sm text-emerald-200">
+                <p className="mb-3 font-semibold">Profile hints from resume</p>
+                <div className="flex flex-wrap gap-2">
+                  {profileHints.map((hint) => (
+                    <span
+                      key={hint}
+                      className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-200"
+                    >
+                      {hint}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {error && (
               <div className="mt-4">
                 <AlertBanner variant="error">{error}</AlertBanner>
@@ -434,6 +461,7 @@ export default function LiveJobsClient() {
                 keyword,
                 title: job.title,
                 description: job.description,
+                profileHints,
               });
 
               const saveKey = `${job.source_id ?? "no-id"}-${index}`;
@@ -508,7 +536,9 @@ export default function LiveJobsClient() {
 
                   {rationale.length > 0 && (
                     <div className="mb-4 rounded-2xl border border-white/10 bg-[#0f172a] p-4 text-sm">
-                      <p className="mb-3 font-semibold">Why suggested</p>
+                      <p className="mb-3 font-semibold">
+                        Why this may fit your profile
+                      </p>
                       <div className="flex flex-wrap gap-2">
                         {rationale.map((item) => (
                           <span

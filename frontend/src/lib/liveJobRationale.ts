@@ -33,19 +33,28 @@ export function deriveLiveJobRationale(params: {
   keyword: string;
   title: string;
   description: string;
+  profileHints?: string[];
 }): string[] {
-  const { keyword, title, description } = params;
+  const { keyword, title, description, profileHints = [] } = params;
 
   const keywordTokens = unique(
     tokenize(keyword).filter((token) => token.length >= 2)
   );
 
-  if (keywordTokens.length === 0) return [];
+  const profileTokens = unique(
+    profileHints
+      .flatMap((item) => tokenize(item))
+      .filter((token) => token.length >= 2)
+  );
+
+  const candidateTokens = unique([...keywordTokens, ...profileTokens]);
+
+  if (candidateTokens.length === 0) return [];
 
   const jobText = normalize(`${title} ${description}`);
   const matches: string[] = [];
 
-  for (const token of keywordTokens) {
+  for (const token of candidateTokens) {
     if (jobText.includes(token)) {
       matches.push(token);
     }

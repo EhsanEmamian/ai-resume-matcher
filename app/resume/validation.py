@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 from app.ai.client import get_anthropic_client
 from app.ai.resume_parser import ResumeAIUnavailableError
+from app.config import settings
 
 
 RESUME_POSITIVE_HINTS = [
@@ -168,7 +169,7 @@ def validate_resume_document(raw_text: str) -> DocumentValidationResult:
 
     try:
         response = client.messages.create(
-            model="claude-3-5-sonnet-latest",
+            model=settings.RESUME_VALIDATION_MODEL,
             max_tokens=400,
             temperature=0,
             messages=[

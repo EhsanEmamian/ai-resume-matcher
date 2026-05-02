@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     ANTHROPIC_API_KEY: str = ""
 
+    RESUME_VALIDATION_MODEL: str = "claude-3-haiku-20240307"
+    RESUME_PARSING_MODEL: str = "claude-3-5-sonnet-latest"
+
     ADZUNA_APP_ID: str = ""
     ADZUNA_APP_KEY: str = ""
     ADZUNA_BASE_URL: str = "https://api.adzuna.com/v1/api/jobs"

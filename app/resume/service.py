@@ -138,54 +138,64 @@ def parse_resume_profile(db: Session, resume_id: uuid.UUID) -> ResumeProfile:
     if resume is None:
         raise ResumeParsingError(f"Resume with id '{resume_id}' not found.")
 
-    validation = validate_resume_document(resume.raw_text)
-
-    resume.is_resume = validation.is_resume
-    resume.document_type = validation.document_type
-    resume.validation_confidence = validation.confidence
-    resume.rejection_reason = validation.rejection_reason
-
-    db.add(resume)
-    db.commit()
-    db.refresh(resume)
-
-    if not validation.is_resume:
-        raise ResumeDocumentRejectedError(
-            validation.rejection_reason
-            or "This document does not look like a resume or CV. Please upload a valid resume PDF.",
-            document_type=validation.document_type,
-            confidence=validation.confidence,
-            resume=resume,
-        )
-
-    parsed_data = parse_resume_with_ai(resume.raw_text)
-
     existing_profile = db.scalar(
         select(ResumeProfile).where(ResumeProfile.resume_id == resume_id)
     )
 
-    if existing_profile is None:
-        profile = ResumeProfile(
-            resume_id=resume.id,
-            skills=parsed_data["skills"],
-            technologies=parsed_data["technologies"],
-            languages=parsed_data["languages"],
-            years_of_experience=parsed_data["years_of_experience"],
-            seniority_level=parsed_data["seniority_level"],
-            suggested_roles=parsed_data["suggested_roles"],
-            raw_ai_response=parsed_data,
-        )
-        db.add(profile)
-    else:
-        existing_profile.skills = parsed_data["skills"]
-        existing_profile.technologies = parsed_data["technologies"]
-        existing_profile.languages = parsed_data["languages"]
-        existing_profile.years_of_experience = parsed_data["years_of_experience"]
-        existing_profile.seniority_level = parsed_data["seniority_level"]
-        existing_profile.suggested_roles = parsed_data["suggested_roles"]
-        existing_profile.raw_ai_response = parsed_data
-        profile = existing_profile
+    if existing_profile is not None:
+        return existing_profile
 
+    if resume.is_resume is False:
+        raise ResumeDocumentRejectedError(
+            resume.rejection_reason
+            or "This document does not look like a resume or CV. Please upload a valid resume PDF.",
+            document_type=resume.document_type or "unknown",
+            confidence=resume.validation_confidence or 0.0,
+            resume=resume,
+        )
+
+    if (
+        resume.is_resume is True
+        and resume.document_type
+        and resume.validation_confidence is not None
+    ):
+        validation = None
+    else:
+        validation = validate_resume_document(resume.raw_text)
+
+    if validation is not None:
+        resume.is_resume = validation.is_resume
+        resume.document_type = validation.document_type
+        resume.validation_confidence = validation.confidence
+        resume.rejection_reason = validation.rejection_reason
+
+        db.add(resume)
+        db.commit()
+        db.refresh(resume)
+
+        if not validation.is_resume:
+            raise ResumeDocumentRejectedError(
+                validation.rejection_reason
+                or "This document does not look like a resume or CV. Please upload a valid resume PDF.",
+                document_type=validation.document_type,
+                confidence=validation.confidence,
+                resume=resume,
+            )
+
+    parsed_data = parse_resume_with_ai(resume.raw_text)
+
+    profile = ResumeProfile(
+        resume_id=resume.id,
+        skills=parsed_data["skills"],
+        technologies=parsed_data["technologies"],
+        languages=parsed_data["languages"],
+        years_of_experience=parsed_data["years_of_experience"],
+        seniority_level=parsed_data["seniority_level"],
+        suggested_roles=parsed_data["suggested_roles"],
+        raw_ai_response=parsed_data,
+    )
+
+    db.add(profile)
     db.commit()
     db.refresh(profile)
     return profile

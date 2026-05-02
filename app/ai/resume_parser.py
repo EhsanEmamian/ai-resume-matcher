@@ -1,6 +1,7 @@
 import json
 
 from app.ai.client import get_anthropic_client
+from app.config import settings
 
 
 class ResumeParsingError(Exception):
@@ -55,7 +56,7 @@ def parse_resume_with_ai(raw_text: str) -> dict:
         prompt = build_resume_parsing_prompt(raw_text)
 
         response = client.messages.create(
-            model="claude-3-5-sonnet-latest",
+            model=settings.RESUME_PARSING_MODEL,
             max_tokens=1000,
             temperature=0,
             messages=[
