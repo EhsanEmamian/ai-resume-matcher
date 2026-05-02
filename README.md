@@ -1,182 +1,250 @@
 # AI Resume Matcher
 
-A backend-focused project that processes resumes, parses structured data, and matches candidates with job postings using a transparent, rule-based scoring system.
+AI Resume Matcher is a full-stack portfolio project that parses resume PDFs, validates whether a document is actually a CV/resume, discovers relevant live jobs, enriches imported job postings from their original source pages, and generates explainable job match results.
 
----
+## What it does
 
-## 🚀 Main Workflow
+This project helps turn a raw resume into a structured candidate profile and connect it to real job opportunities through a practical two-stage workflow:
 
-1. Upload a resume PDF
-2. Extract raw text from the PDF
-3. Store the resume and extracted text
-4. Parse the resume into a structured profile
-5. Create job postings
-6. Generate match results between a resume profile and stored jobs
-7. Retrieve ranked matches with full job information
+- **Discovery mode** for fast live job browsing
+- **Analysis mode** for enriched imported jobs and explainable matching
 
----
+## Why this project exists
 
-## 📡 API Endpoints
+Most job-matching tools feel like black boxes. This project was built to make the process more transparent:
 
-### Health
-- GET /health
+- validate uploaded documents before parsing
+- avoid hallucinated extraction from unrelated PDFs
+- show how a profile connects to real job searches
+- enrich incomplete job previews with full source-page analysis
+- make match reasoning visible instead of hidden
 
-### Jobs
-- POST /jobs
-- GET /jobs
-- GET /jobs/{job_id}
-- DELETE /jobs/{job_id}
+## Core features
 
-### Resumes
-- POST /resumes/upload
-- GET /resumes/{resume_id}
-- POST /resumes/{resume_id}/parse
+- Resume PDF upload
+- Resume/CV validation before profile extraction
+- AI-based structured profile extraction
+- Live Adzuna job search
+- Country and city based job search UX
+- Job title autocomplete
+- Profile-based live job search suggestions
+- Save & Analyze workflow for richer job enrichment
+- Imported job enrichment from original source pages
+- Explainable match scoring with score breakdowns
+- Job management: delete single job / clear imported source jobs
+- Loading skeletons and product-style UI states
 
-### Matches
-- POST /matches/{resume_id}
-- GET /matches/{resume_id}
+## Product flow
 
----
+### 1. Upload and validate a resume
 
-## ⚙️ Environment Variables
+The user uploads a PDF.
 
-Create a `.env` file based on `.env.example`.
+Before any profile extraction happens, the backend checks whether the file actually looks like a resume/CV.
 
-DATABASE_URL=postgresql://postgres:postgres@db:5432/resume_matcher
-DEBUG=True
-ANTHROPIC_API_KEY=
+If the file is not a resume, it is rejected with a clear message instead of generating hallucinated profile data.
 
-### Notes
-- DATABASE_URL uses db as hostname because the API runs inside Docker Compose
-- ANTHROPIC_API_KEY is optional for local development (fallback parser is used if missing)
+### 2. Extract a structured candidate profile
 
----
+For valid resumes, the system extracts:
 
-## 🐳 Run Locally with Docker
+- skills
+- technologies
+- languages
+- seniority
+- years of experience
+- suggested roles
+
+### 3. Discover live jobs
+
+Based on the parsed profile, the UI suggests live job searches such as:
+
+- Backend Engineer
+- Python Developer
+- Junior Software Developer
+
+The live jobs page is intentionally lightweight and optimized for scanning.
+
+### 4. Save and enrich a job
+
+When the user saves a live job, the backend attempts to fetch the original job page and enrich the posting with deeper information such as:
+
+- fuller description text
+- additional technologies
+- required languages
+- experience requirement
+- salary text
+
+### 5. Analyze match results
+
+Saved jobs can then be matched against the parsed resume profile.
+
+The result is an explainable scoring view with:
+
+- final match score
+- matched skills
+- score breakdown
+- job detail analysis
+
+## Tech stack
+
+### Frontend
+
+- Next.js
+- TypeScript
+- Tailwind CSS
+
+### Backend
+
+- FastAPI
+- SQLAlchemy
+- PostgreSQL
+- Alembic
+
+### AI / Data Processing
+
+- Anthropic Claude API
+- PDF text extraction
+- Rule-based pre-validation
+- Rule-based job enrichment helpers
+
+### Job data
+
+- Adzuna live job search API
+- Source-page enrichment on imported jobs
+
+## Architecture overview
+
+### Frontend
+
+The frontend is built with Next.js App Router and separates server page wrappers from client-side interactive components.
+
+Main product views:
+
+- Home / resume upload
+- Resume profile
+- Live jobs
+- Saved jobs
+- Job detail
+- Match results
+
+### Backend
+
+The FastAPI backend is responsible for:
+
+- file upload
+- PDF text extraction
+- resume validation
+- profile parsing
+- job ingestion
+- source enrichment
+- job matching
+- persistence
+
+### Database
+
+PostgreSQL stores:
+
+- uploaded resumes
+- parsed profiles
+- imported jobs
+- enriched source text
+- match results
+
+### Two-tier job model
+
+The product intentionally separates jobs into two different states:
+
+- **Live jobs** → lightweight discovery previews
+- **Saved jobs** → enriched analysis objects
+
+This was a deliberate product and engineering decision to keep live search fast while making saved jobs more trustworthy and detailed.
+
+## Key design decisions
+
+### 1. Resume validation before extraction
+
+The system validates whether an uploaded PDF is actually a resume/CV before extracting profile fields.
+
+This prevents hallucinated profile generation from unrelated documents such as housing notices, invoices, or letters.
+
+### 2. Rule-based pre-validation before AI validation
+
+Obvious non-resume files are rejected earlier using lightweight rule-based checks before calling the AI model.
+
+This reduces unnecessary API cost and improves reliability.
+
+### 3. Discovery mode vs analysis mode
+
+Live jobs are intentionally lightweight.
+
+Imported jobs are enriched and analyzed in more depth.
+
+This avoids misleading users with incomplete metadata inside live search results.
+
+### 4. Source enrichment only after save
+
+The app does not try to deeply scrape every live result.
+
+Instead, enrichment happens when the user explicitly saves a job.
+
+This keeps live browsing fast and makes saved jobs much richer.
+
+### 5. Explainable matching instead of black-box ranking
+
+Match results are presented with score breakdowns and visible matched skills rather than opaque scoring only.
+
+## Run locally
 
 ### 1. Clone the repository
-git clone https://github.com/EhsanEmamian/ai-resume-matcher.git
-cd ai-resume-matcher
 
-### 2. Create .env
-Copy .env.example to .env and adjust values if needed.
+```bash
+git clone <your-repo-url>
+cd ai-resume-matcher
+```
+
+### 2. Configure environment variables
+
+Create the required environment files for frontend and backend.
+
+Typical backend configuration includes:
+
+- database connection settings
+- Anthropic API key
+- Adzuna API credentials
 
 ### 3. Start the application
+
+```bash
 docker compose up --build
+```
 
-### 4. Run migrations
-docker compose run --rm api alembic upgrade head
+### 4. Open the apps
 
-### 5. Open the docs
-Swagger UI: http://localhost:8000/docs
-Health check: http://localhost:8000/health
+- Frontend: <http://localhost:3000>
+- Backend API docs: <http://localhost:8000/docs>
 
----
+## Main pages
 
-## 🔄 Example Usage Flow
+- `/` → Upload and parse a resume
+- `/profile/[resumeId]` → Parsed profile overview
+- `/live-jobs` → Lightweight live job discovery
+- `/jobs` → Saved/imported jobs
+- `/jobs/[jobId]` → Full job detail analysis
+- `/matches/[resumeId]` → Explainable job match results
 
-### 1. Create job postings
-POST /jobs
+## Future improvements
 
-### 2. Upload a resume
-POST /resumes/upload
+Planned or possible next steps:
 
-### 3. Parse the resume
-POST /resumes/{resume_id}/parse
+- stronger profile-aware rationale in live jobs
+- richer extracted job requirements
+- better enrichment support for difficult job sources
+- user accounts / guest vs registered user flows
+- saved search history
+- job alerting
+- deployment and public demo environment
 
-If Anthropic API access is unavailable, the fallback parser is used.
+## Author
 
-### 4. Generate matches
-POST /matches/{resume_id}
-
-### 5. List matches
-GET /matches/{resume_id}?min_score=0&sort_by=score
-
----
-
-## 🧠 Matching Logic
-
-The matching engine is rule-based and explainable.
-
-### Scoring Factors
-- Skill and technology overlap
-- Suggested role vs. job title overlap
-- Remote-friendly job bonus
-
-### Why rule-based (v1)?
-- Easier to debug
-- Easier to explain in interviews
-- Deterministic
-- Cheaper and more reliable than LLM-based scoring
-
----
-
-## 🤖 AI Parsing Strategy
-
-### 1. Anthropic-based parsing
-If a valid ANTHROPIC_API_KEY is available, the resume is sent to Claude for structured parsing.
-
-### 2. Fallback parser
-Used when AI parsing fails due to:
-- Missing API key
-- Invalid API key
-- Insufficient credits
-- Malformed response
-- Provider errors
-
-This ensures the pipeline always works end-to-end.
-
----
-
-## ⚠️ Known Limitations
-
-- Only PDF resumes are supported
-- Scanned/image PDFs may fail text extraction
-- No authentication
-- Files are stored locally
-- Matching is rule-based (not semantic)
-- No frontend
-- No background jobs
-- No production deployment setup
-
----
-
-## 🚧 Future Improvements
-
-- Add authentication
-- Add DOCX support
-- Add job update endpoint
-- Improve matching algorithm
-- Add semantic search / embeddings
-- Add AI-based job scoring (optional)
-- Add tests for services and endpoints
-- Add pagination improvements
-- Add deployment configuration
-- Add frontend dashboard
-
----
-
-## 💡 Why This Project Matters
-
-This project demonstrates practical backend engineering skills:
-
-- API design
-- Database modeling
-- Migrations
-- File handling
-- PDF processing
-- External AI integration
-- Graceful fallback design
-- Rule-based scoring
-- Modular architecture
-
-Designed as a portfolio project for junior backend / AI integration roles.
-
----
-
-## 👤 Author
-
-Ehsan Emamian
-
-GitHub: https://github.com/EhsanEmamian
-LinkedIn: https://linkedin.com/in/ehsan-emamian
+Built by **Ehsan Emamian** as a full-stack portfolio project focused on backend engineering, AI integration, and product-oriented system design.
