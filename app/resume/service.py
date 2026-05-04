@@ -11,6 +11,7 @@ from app.ai.resume_parser import ResumeParsingError, parse_resume_with_ai
 from app.matching.models import MatchResult
 from app.resume.models import Resume, ResumeProfile
 from app.resume.pdf_extractor import PDFExtractionError, extract_text_from_pdf
+from app.resume.text_utils import normalize_resume_text
 from app.resume.validation import ResumeValidationError, validate_resume_document
 
 UPLOAD_DIR = Path("uploads")
@@ -92,7 +93,7 @@ def create_resume(
                 )
 
         file_path, _stored_name = save_resume_file(upload_file)
-        raw_text = extract_text_from_pdf(file_path)
+        raw_text = normalize_resume_text(extract_text_from_pdf(file_path))
 
         resume = Resume(
             filename=upload_file.filename or "resume.pdf",

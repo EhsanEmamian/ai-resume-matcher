@@ -7,6 +7,7 @@ from app.database import get_db
 from app.exceptions import NotFoundError
 from app.jobs import ingestion, service
 from app.jobs.adzuna_client import search_jobs
+from app.jobs.arbeitnow_client import search_arbeitnow_jobs
 from app.jobs.schemas import (
     BackfillJobSkillsResult,
     ClearJobsBySourceResult,
@@ -113,18 +114,26 @@ def ingest_jobs(
     "/search-external",
     response_model=ExternalJobSearchResult,
     status_code=status.HTTP_200_OK,
-    summary="Search external jobs live from Adzuna",
+    summary="Search external jobs live",
 )
 def search_external_jobs(
     payload: ExternalJobSearchRequest,
 ) -> ExternalJobSearchResult:
-    jobs = search_jobs(
-        keyword=payload.keyword,
-        location=payload.location,
-        country=payload.country,
-        max_results=payload.max_results,
-        page=payload.page,
-    )
+    if payload.source == "arbeitnow":
+        jobs = search_arbeitnow_jobs(
+            keyword=payload.keyword,
+            location=payload.location,
+            page=payload.page,
+            max_results=payload.max_results,
+        )
+    else:
+        jobs = search_jobs(
+            keyword=payload.keyword,
+            location=payload.location,
+            country=payload.country,
+            max_results=payload.max_results,
+            page=payload.page,
+        )
 
     return ExternalJobSearchResult(
         total=len(jobs),

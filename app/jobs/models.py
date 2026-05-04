@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, Float, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -42,6 +42,10 @@ class JobPosting(Base):
     source_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     enrichment_status: Mapped[str | None] = mapped_column(String(30), nullable=True)
     enrichment_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    enrichment_failure_reason: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    enrichment_raw_html_length: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    enrichment_text_word_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    enrichment_text_preview: Mapped[str | None] = mapped_column(Text, nullable=True)
     source: Mapped[str] = mapped_column(
         String(50),
         nullable=False,

@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.jobs.models import JobPosting
 from app.jobs.schemas import JobPostingCreate
-from app.jobs.source_enricher import SourceEnrichmentError, fetch_source_text
+from app.jobs.source_enricher import fetch_source_text_result
 from app.jobs.skill_extractor import (
     extract_experience_requirement_from_text,
     extract_languages_from_text,
@@ -55,33 +55,45 @@ def import_external_job(db: Session, payload: dict) -> tuple[str, JobPosting]:
     source_text = None
     enrichment_status = "not_attempted"
     enrichment_error = None
+    enrichment_failure_reason = None
+    enrichment_result = None
 
     print("DEBUG import_external_job source:", source)
     print("DEBUG import_external_job source_id:", source_id)
     print("DEBUG import_external_job source_url:", source_url)
 
-    try:
-        if source_url:
-            enrichment_status = "attempted"
-            source_text = fetch_source_text(source_url)
+    if source_url:
+        enrichment_result = fetch_source_text_result(source_url)
+        source_text = enrichment_result.text
+        enrichment_status = enrichment_result.status
+        enrichment_error = enrichment_result.error
+        enrichment_failure_reason = enrichment_result.failure_reason
 
-            if source_text:
-                enrichment_status = "success"
-            else:
-                enrichment_status = "partial"
-                enrichment_error = "Original source text could not be extracted."
-
-            print(
-                "DEBUG import_external_job source_text length:",
-                len(source_text) if source_text else 0,
-            )
-        else:
-            print("DEBUG import_external_job no source_url")
-    except SourceEnrichmentError as exc:
-        print("DEBUG import_external_job enrichment failed:", exc)
-        source_text = None
-        enrichment_status = "failed"
-        enrichment_error = str(exc)
+        print(
+            "DEBUG import_external_job source_text length:",
+            len(source_text) if source_text else 0,
+        )
+        print("DEBUG import_external_job enrichment_status:", enrichment_status)
+        print(
+            "DEBUG import_external_job enrichment_failure_reason:",
+            enrichment_failure_reason,
+        )
+        print("DEBUG import_external_job enrichment_error:", enrichment_error)
+        print(
+            "DEBUG import_external_job raw_html_length:",
+            enrichment_result.raw_html_length if enrichment_result else None,
+        )
+        print(
+            "DEBUG import_external_job text_word_count:",
+            enrichment_result.text_word_count if enrichment_result else None,
+        )
+        print(
+            "DEBUG import_external_job text_preview:",
+            enrichment_result.text_preview if enrichment_result else None,
+        )
+    else:
+        print("DEBUG import_external_job no source_url")
+        enrichment_failure_reason = "no_url"
 
     extraction_text = source_text or description
 
@@ -110,6 +122,24 @@ def import_external_job(db: Session, payload: dict) -> tuple[str, JobPosting]:
 
     if enrichment_error and not payload.get("enrichment_error"):
         payload["enrichment_error"] = enrichment_error
+
+    if enrichment_failure_reason and not payload.get("enrichment_failure_reason"):
+        payload["enrichment_failure_reason"] = enrichment_failure_reason
+
+    if payload.get("enrichment_raw_html_length") is None:
+        payload["enrichment_raw_html_length"] = (
+            enrichment_result.raw_html_length if source_url and enrichment_result else None
+        )
+
+    if payload.get("enrichment_text_word_count") is None:
+        payload["enrichment_text_word_count"] = (
+            enrichment_result.text_word_count if source_url and enrichment_result else None
+        )
+
+    if payload.get("enrichment_text_preview") is None:
+        payload["enrichment_text_preview"] = (
+            enrichment_result.text_preview if source_url and enrichment_result else None
+        )
 
     if not payload.get("required_skills"):
         payload["required_skills"] = extracted_skills

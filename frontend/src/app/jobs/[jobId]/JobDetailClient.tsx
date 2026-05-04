@@ -177,6 +177,26 @@ export default function JobDetailClient({
                   {job.source_text ? "Available" : "Not available"}
                 </p>
                 <p>
+                  <span className="font-medium">Enrichment status:</span>{" "}
+                  {job.enrichment_status || "-"}
+                </p>
+                <p>
+                  <span className="font-medium">Failure reason:</span>{" "}
+                  {job.enrichment_failure_reason || "-"}
+                </p>
+                <p>
+                  <span className="font-medium">Raw HTML length:</span>{" "}
+                  {job.enrichment_raw_html_length ?? "-"}
+                </p>
+                <p>
+                  <span className="font-medium">Extracted word count:</span>{" "}
+                  {job.enrichment_text_word_count ?? "-"}
+                </p>
+                <p>
+                  <span className="font-medium">Text preview:</span>{" "}
+                  {job.enrichment_text_preview || "-"}
+                </p>
+                <p>
                   <span className="font-medium">Posted at:</span>{" "}
                   {job.posted_at || "-"}
                 </p>
@@ -197,8 +217,12 @@ export default function JobDetailClient({
           {job.enrichment_status === "failed" ||
           job.enrichment_status === "partial" ? (
             <div className="mt-3 rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-              Full extraction unavailable. This job is currently using a shorter
-              source preview.
+              {job.enrichment_failure_reason === "redirect_interstitial"
+                ? "Full extraction unavailable. The original source link resolved to an intermediate redirect page, so the job is using a shorter preview instead."
+                : "Full extraction unavailable. This job is currently using a shorter source preview."}
+              {job.enrichment_failure_reason
+                ? ` Reason: ${job.enrichment_failure_reason}.`
+                : ""}
             </div>
           ) : null}
 

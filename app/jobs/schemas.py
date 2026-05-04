@@ -29,6 +29,10 @@ class JobPostingRead(BaseModel):
     source_text: str | None = None
     enrichment_status: str | None = None
     enrichment_error: str | None = None
+    enrichment_failure_reason: str | None = None
+    enrichment_raw_html_length: int | None = None
+    enrichment_text_word_count: int | None = None
+    enrichment_text_preview: str | None = None
     location: str | None
     remote: bool
     source: str
@@ -72,6 +76,7 @@ class ExternalJobSearchRequest(BaseModel):
     country: str = Field(default="de", min_length=2, max_length=2)
     max_results: int = Field(default=20, ge=1, le=50)
     page: int = Field(default=1, ge=1, le=20)
+    source: str = "adzuna"
 
 
 class ExternalJobRead(BaseModel):
@@ -85,6 +90,10 @@ class ExternalJobRead(BaseModel):
     source_text: str | None = None
     enrichment_status: str | None = None
     enrichment_error: str | None = None
+    enrichment_failure_reason: str | None = None
+    enrichment_raw_html_length: int | None = None
+    enrichment_text_word_count: int | None = None
+    enrichment_text_preview: str | None = None
     location: str | None
     remote: bool
     source: str
@@ -117,6 +126,10 @@ class ImportExternalJobRequest(BaseModel):
     source_text: str | None = None
     enrichment_status: str | None = None
     enrichment_error: str | None = None
+    enrichment_failure_reason: str | None = None
+    enrichment_raw_html_length: int | None = None
+    enrichment_text_word_count: int | None = None
+    enrichment_text_preview: str | None = None
     location: str | None = None
     remote: bool = False
     source: str

@@ -1,12 +1,24 @@
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 
 import httpx
 
 
 class SourceEnrichmentError(Exception):
     pass
+
+
+@dataclass
+class SourceEnrichmentResult:
+    status: str
+    text: str | None
+    failure_reason: str | None = None
+    error: str | None = None
+    raw_html_length: int | None = None
+    text_word_count: int | None = None
+    text_preview: str | None = None
 
 
 def _strip_html(html: str) -> str:
@@ -39,12 +51,16 @@ def _strip_html(html: str) -> str:
     return html.strip()
 
 
-def fetch_source_text(url: str) -> str | None:
+def fetch_source_text_result(url: str) -> SourceEnrichmentResult:
     if not url:
-        print("DEBUG fetch_source_text empty url")
-        return None
+        return SourceEnrichmentResult(
+            status="not_attempted",
+            text=None,
+            failure_reason="no_url",
+            error=None,
+        )
 
-    print("DEBUG fetch_source_text url:", url)
+    print("DEBUG fetch_source_text_result url:", url)
 
     try:
         response = httpx.get(
@@ -64,25 +80,123 @@ def fetch_source_text(url: str) -> str | None:
                 "Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
             },
         )
-
-        print("DEBUG fetch_source_text status:", response.status_code)
-        print("DEBUG fetch_source_text final_url:", str(response.url))
-        print("DEBUG fetch_source_text html length:", len(response.text))
-
-        response.raise_for_status()
-
+    except httpx.TimeoutException as exc:
+        return SourceEnrichmentResult(
+            status="failed",
+            text=None,
+            failure_reason="timeout",
+            error=str(exc),
+        )
     except Exception as exc:
-        raise SourceEnrichmentError(f"Failed to fetch source page: {exc}") from exc
+        return SourceEnrichmentResult(
+            status="failed",
+            text=None,
+            failure_reason="fetch_failed",
+            error=str(exc),
+        )
 
-    text = _strip_html(response.text)
-    word_count = len(text.split())
+    print("DEBUG fetch_source_text_result status:", response.status_code)
+    print("DEBUG fetch_source_text_result final_url:", str(response.url))
+    print("DEBUG fetch_source_text_result html length:", len(response.text))
 
-    print("DEBUG fetch_source_text text length:", len(text))
-    print("DEBUG fetch_source_text word count:", word_count)
-    print("DEBUG fetch_source_text preview:", text[:500])
+    if response.status_code in {401, 403}:
+        return SourceEnrichmentResult(
+            status="failed",
+            text=None,
+            failure_reason="blocked",
+            error=f"HTTP {response.status_code}",
+        )
 
-    if word_count < 80:
-        print("DEBUG fetch_source_text rejected: less than 80 words")
-        return None
+    if response.status_code >= 400:
+        return SourceEnrichmentResult(
+            status="failed",
+            text=None,
+            failure_reason="fetch_failed",
+            error=f"HTTP {response.status_code}",
+        )
 
-    return text
+    raw_html = response.text or ""
+    stripped = _strip_html(raw_html)
+
+    raw_html_length = len(raw_html)
+    text_word_count = len(stripped.split())
+    text_preview = stripped[:300] if stripped else None
+
+    lowered_preview = (text_preview or "").lower()
+    redirect_indicators = [
+        "weitergeleitet",
+        "redirected",
+        "redirect",
+        "see the ad here",
+        "see the listing here",
+        "you will now be redirected",
+        "adzuna-jobsuche",
+        "myability",
+    ]
+
+    print("DEBUG fetch_source_text_result text length:", len(stripped))
+    print("DEBUG fetch_source_text_result word count:", text_word_count)
+    print("DEBUG fetch_source_text_result preview:", stripped[:500])
+
+    if raw_html_length < 500:
+        return SourceEnrichmentResult(
+            status="failed",
+            text=None,
+            failure_reason="too_short_response",
+            error=f"HTML too short: {raw_html_length} chars",
+            raw_html_length=raw_html_length,
+            text_word_count=text_word_count,
+            text_preview=text_preview,
+        )
+
+    if any(indicator in lowered_preview for indicator in redirect_indicators):
+        return SourceEnrichmentResult(
+            status="failed",
+            text=None,
+            failure_reason="redirect_interstitial",
+            error="Source URL resolved to an intermediate redirect/interstitial page",
+            raw_html_length=raw_html_length,
+            text_word_count=text_word_count,
+            text_preview=text_preview,
+        )
+
+    if text_word_count < 80:
+        return SourceEnrichmentResult(
+            status="partial",
+            text=None,
+            failure_reason="too_short_text",
+            error=f"Extracted text too short: {text_word_count} words",
+            raw_html_length=raw_html_length,
+            text_word_count=text_word_count,
+            text_preview=text_preview,
+        )
+
+    lower_html = raw_html.lower()
+    js_indicators = [
+        "__next",
+        "javascript is required",
+        "enable javascript",
+        "window.__",
+        "app shell",
+    ]
+
+    if any(indicator in lower_html for indicator in js_indicators) and text_word_count < 200:
+        return SourceEnrichmentResult(
+            status="failed",
+            text=None,
+            failure_reason="js_rendered",
+            error="Likely JavaScript-rendered page shell",
+            raw_html_length=raw_html_length,
+            text_word_count=text_word_count,
+            text_preview=text_preview,
+        )
+
+    return SourceEnrichmentResult(
+        status="success",
+        text=stripped,
+        failure_reason=None,
+        error=None,
+        raw_html_length=raw_html_length,
+        text_word_count=text_word_count,
+        text_preview=text_preview,
+    )

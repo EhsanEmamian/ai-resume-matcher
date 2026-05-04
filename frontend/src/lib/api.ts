@@ -89,6 +89,10 @@ export type JobItem = {
   source_text: string | null;
   enrichment_status: string | null;
   enrichment_error: string | null;
+  enrichment_failure_reason: string | null;
+  enrichment_raw_html_length: number | null;
+  enrichment_text_word_count: number | null;
+  enrichment_text_preview: string | null;
   source_id: string | null;
   source_url: string | null;
   salary_min: number | null;
@@ -110,6 +114,7 @@ export type ExternalJobSearchRequest = {
   country: string;
   max_results: number;
   page: number;
+  source: string;
 };
 
 export type ExternalJobItem = {
@@ -126,6 +131,10 @@ export type ExternalJobItem = {
   source_text: string | null;
   enrichment_status: string | null;
   enrichment_error: string | null;
+  enrichment_failure_reason: string | null;
+  enrichment_raw_html_length: number | null;
+  enrichment_text_word_count: number | null;
+  enrichment_text_preview: string | null;
   source_id: string | null;
   source_url: string | null;
   salary_min: number | null;

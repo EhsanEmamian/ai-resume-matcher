@@ -46,6 +46,7 @@ export default function LiveJobsClient() {
   const [keyword, setKeyword] = useState("software engineer");
   const [location, setLocation] = useState("");
   const [country, setCountry] = useState("de");
+  const [source, setSource] = useState("adzuna");
   const [maxResults, setMaxResults] = useState(10);
   const [page, setPage] = useState(1);
   const [profileHints, setProfileHints] = useState<string[]>([]);
@@ -71,6 +72,7 @@ export default function LiveJobsClient() {
     const keywordFromUrl = searchParams.get("keyword");
     const locationFromUrl = searchParams.get("location");
     const countryFromUrl = searchParams.get("country");
+    const sourceFromUrl = searchParams.get("source");
     const autoFromUrl = searchParams.get("auto");
     const hintsFromUrl = searchParams.get("hints");
 
@@ -84,6 +86,10 @@ export default function LiveJobsClient() {
 
     if (countryFromUrl) {
       setCountry(countryFromUrl);
+    }
+
+    if (sourceFromUrl) {
+      setSource(sourceFromUrl);
     }
 
     if (hintsFromUrl) {
@@ -138,6 +144,7 @@ export default function LiveJobsClient() {
         keyword,
         location,
         country,
+        source,
         max_results: maxResults,
         page,
       });
@@ -162,6 +169,7 @@ export default function LiveJobsClient() {
         keyword,
         location,
         country,
+        source,
         max_results: maxResults,
         page,
       });
@@ -187,6 +195,7 @@ export default function LiveJobsClient() {
     keyword,
     location,
     country,
+    source,
     maxResults,
     page,
   ]);
@@ -247,12 +256,12 @@ export default function LiveJobsClient() {
               External Job Search
             </p>
             <h1 className="mt-2 text-4xl font-bold tracking-tight">
-              Live Adzuna Search
+              Live Job Search
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-400">
-              Search jobs live from Adzuna without importing them first. Live job
-              previews are lightweight for fast scanning. Full details and deeper
-              extraction become available after saving.
+              Search jobs live from external sources without importing them
+              first. Live job previews are lightweight for fast scanning. Full
+              details and deeper extraction become available after saving.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-2">
@@ -278,7 +287,7 @@ export default function LiveJobsClient() {
           <section className="rounded-[2rem] border border-white/10 bg-[#111827] p-6 shadow-sm">
             <form
               onSubmit={handleSubmit}
-              className="grid gap-4 md:grid-cols-2 lg:grid-cols-5"
+              className="grid gap-4 md:grid-cols-2 lg:grid-cols-6"
             >
               <div className="relative lg:col-span-2">
                 <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-200">
@@ -354,6 +363,20 @@ export default function LiveJobsClient() {
               </div>
 
               <div>
+                <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-200">
+                  Source
+                </label>
+                <select
+                  value={source}
+                  onChange={(e) => setSource(e.target.value)}
+                  className="block w-full rounded-2xl border border-white/10 bg-[#0f172a] px-4 py-3 text-sm text-slate-100"
+                >
+                  <option value="adzuna">Adzuna</option>
+                  <option value="arbeitnow">Arbeitnow</option>
+                </select>
+              </div>
+
+              <div>
                 <label className="mb-2 block text-sm font-medium text-slate-200">
                   Page
                 </label>
@@ -381,7 +404,7 @@ export default function LiveJobsClient() {
                 />
               </div>
 
-              <div className="md:col-span-2 lg:col-span-5">
+              <div className="md:col-span-2 lg:col-span-6">
                 <button
                   type="submit"
                   disabled={loading}
@@ -426,7 +449,8 @@ export default function LiveJobsClient() {
           {searched && (
             <div className="text-sm text-slate-400">
               Found <span className="font-semibold">{results.length}</span> live
-              results on page <span className="font-semibold">{page}</span>.
+              results from <span className="font-semibold">{source}</span> on
+              page <span className="font-semibold">{page}</span>.
             </div>
           )}
 
@@ -444,8 +468,8 @@ export default function LiveJobsClient() {
                 <div className="p-8">
                   <h2 className="text-xl font-semibold">No live results found</h2>
                   <p className="mt-3 text-sm leading-6 text-slate-400">
-                    Try a broader keyword, remove the location, or switch the
-                    country.
+                    Try a broader keyword, remove the location, switch the
+                    country, or try another source.
                   </p>
                 </div>
               </div>
@@ -506,7 +530,7 @@ export default function LiveJobsClient() {
 
                     <div className="flex flex-col gap-2">
                       <div className="rounded-2xl bg-[#3B82F6] px-4 py-2 text-sm font-medium text-white">
-                        Live Adzuna
+                        Live {job.source === "arbeitnow" ? "Arbeitnow" : "Adzuna"}
                       </div>
 
                       <button
