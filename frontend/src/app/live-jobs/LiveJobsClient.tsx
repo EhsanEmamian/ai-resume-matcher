@@ -281,6 +281,9 @@ export default function LiveJobsClient() {
             <div className="mt-5 rounded-2xl border border-blue-400/20 bg-blue-500/10 px-4 py-3 text-sm text-blue-200">
               Live job previews · Full details, requirements, languages,
               experience, and salary extraction become available after saving.
+              {source === "arbeitnow"
+                ? " Arbeitnow is currently selected for richer job descriptions."
+                : " Adzuna is currently selected for broader job volume."}
             </div>
           </section>
 

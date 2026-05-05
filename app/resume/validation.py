@@ -116,6 +116,29 @@ def _count_keyword_hits(text: str, keywords: list[str]) -> int:
     return sum(1 for keyword in keywords if keyword in lowered)
 
 
+def _extract_json_object(raw_output: str) -> str:
+    text = raw_output.strip()
+
+    if text.startswith("```"):
+        lines = text.splitlines()
+
+        if lines and lines[0].strip().startswith("```"):
+            lines = lines[1:]
+
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+
+        text = "\n".join(lines).strip()
+
+    start = text.find("{")
+    end = text.rfind("}")
+
+    if start == -1 or end == -1 or end <= start:
+        return text
+
+    return text[start : end + 1]
+
+
 def _rule_based_resume_rejection(raw_text: str) -> DocumentValidationResult | None:
     lowered = raw_text.lower()
     word_count = len(lowered.split())
@@ -202,8 +225,10 @@ def validate_resume_document(raw_text: str) -> DocumentValidationResult:
     if not raw_output:
         raise ResumeValidationError("Resume validation returned an empty response.")
 
+    json_text = _extract_json_object(raw_output)
+
     try:
-        parsed = json.loads(raw_output)
+        parsed = json.loads(json_text)
     except json.JSONDecodeError as exc:
         raise ResumeValidationError(
             f"Resume validation did not return valid JSON. Raw output: {raw_output}"

@@ -315,8 +315,8 @@ export default function ProfileClient({
                 Find latest jobs based on this profile
               </h2>
               <p className="mt-3 text-sm leading-6 text-slate-400">
-                Based on the extracted profile, try one of these live job
-                searches.
+                Based on the extracted profile, try one of these higher-quality
+                live job searches.
               </p>
 
               <div className="mt-5 flex flex-wrap gap-3">
@@ -325,7 +325,7 @@ export default function ProfileClient({
                     key={suggestion.keyword}
                     href={`/live-jobs?keyword=${encodeURIComponent(
                       suggestion.keyword
-                    )}&country=de&location=&auto=1&hints=${profileHintsParam}`}
+                    )}&country=de&location=&auto=1&source=arbeitnow&hints=${profileHintsParam}`}
                     className="rounded-2xl border border-white/10 bg-[#0f172a] px-4 py-2 text-sm font-medium text-slate-200 hover:bg-white/5"
                   >
                     {suggestion.label}
@@ -339,6 +339,11 @@ export default function ProfileClient({
                   Search with custom keyword
                 </Link>
               </div>
+
+              <p className="mt-4 text-xs text-slate-500">
+                Profile-based suggestions currently open in Arbeitnow for richer
+                job descriptions and cleaner analysis.
+              </p>
             </section>
           )}
 
