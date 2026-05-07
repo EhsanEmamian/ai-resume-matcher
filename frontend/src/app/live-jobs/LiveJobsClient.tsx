@@ -112,6 +112,23 @@ export default function LiveJobsClient() {
     }
   }, [country, location, availableCities]);
 
+  useEffect(() => {
+    if (!prefilledFromUrl || didAutoSearch) return;
+    if (!keyword.trim()) return;
+
+    setDidAutoSearch(true);
+    runAutoSearch();
+  }, [
+    prefilledFromUrl,
+    didAutoSearch,
+    keyword,
+    location,
+    country,
+    source,
+    maxResults,
+    page,
+  ]);
+
   function toggleExpanded(index: number) {
     setExpandedIndexes((prev) =>
       prev.includes(index)
@@ -183,23 +200,6 @@ export default function LiveJobsClient() {
     }
   }
 
-  useEffect(() => {
-    if (!prefilledFromUrl || didAutoSearch) return;
-    if (!keyword.trim()) return;
-
-    setDidAutoSearch(true);
-    runAutoSearch();
-  }, [
-    prefilledFromUrl,
-    didAutoSearch,
-    keyword,
-    location,
-    country,
-    source,
-    maxResults,
-    page,
-  ]);
-
   async function handleSaveJob(job: ExternalJobItem, index: number) {
     const saveKey = `${job.source_id ?? "no-id"}-${index}`;
 
@@ -222,6 +222,7 @@ export default function LiveJobsClient() {
     return (
       <>
         <Header />
+
         <main className="min-h-screen bg-[#0B1120] px-6 py-12 text-slate-100">
           <div className="mx-auto max-w-6xl space-y-6">
             <div className="rounded-[2rem] border border-white/10 bg-[#111827] p-8 shadow-sm">
@@ -240,6 +241,7 @@ export default function LiveJobsClient() {
             <SkeletonCard />
           </div>
         </main>
+
         <Footer />
       </>
     );
@@ -255,9 +257,11 @@ export default function LiveJobsClient() {
             <p className="text-sm uppercase tracking-[0.2em] text-slate-400">
               External Job Search
             </p>
+
             <h1 className="mt-2 text-4xl font-bold tracking-tight">
               Live Job Search
             </h1>
+
             <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-400">
               Search jobs live from external sources without importing them
               first. Live job previews are lightweight for fast scanning. Full
@@ -297,6 +301,7 @@ export default function LiveJobsClient() {
                   <Search size={16} />
                   Keyword
                 </label>
+
                 <input
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
@@ -330,6 +335,7 @@ export default function LiveJobsClient() {
                   <MapPin size={16} />
                   City
                 </label>
+
                 <select
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
@@ -342,6 +348,7 @@ export default function LiveJobsClient() {
                     </option>
                   ))}
                 </select>
+
                 <p className="mt-1 text-xs text-slate-500">
                   Optional. Leave empty for broader country-wide results.
                 </p>
@@ -352,6 +359,7 @@ export default function LiveJobsClient() {
                   <Globe size={16} />
                   Country
                 </label>
+
                 <select
                   value={country}
                   onChange={(e) => setCountry(e.target.value)}
@@ -367,8 +375,9 @@ export default function LiveJobsClient() {
 
               <div>
                 <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-200">
-                  Source
+                  Job source
                 </label>
+
                 <select
                   value={source}
                   onChange={(e) => setSource(e.target.value)}
@@ -377,12 +386,18 @@ export default function LiveJobsClient() {
                   <option value="adzuna">Adzuna</option>
                   <option value="arbeitnow">Arbeitnow</option>
                 </select>
+
+                <p className="mt-1 text-xs text-slate-500">
+                  Adzuna gives broader coverage. Arbeitnow usually gives richer
+                  job descriptions.
+                </p>
               </div>
 
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-200">
                   Page
                 </label>
+
                 <input
                   type="number"
                   min={1}
@@ -397,6 +412,7 @@ export default function LiveJobsClient() {
                 <label className="mb-2 block text-sm font-medium text-slate-200">
                   Max results
                 </label>
+
                 <input
                   type="number"
                   min={1}
@@ -429,6 +445,7 @@ export default function LiveJobsClient() {
             {profileHints.length > 0 && (
               <div className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-4 text-sm text-emerald-200">
                 <p className="mb-3 font-semibold">Profile hints from resume</p>
+
                 <div className="flex flex-wrap gap-2">
                   {profileHints.map((hint) => (
                     <span
@@ -468,8 +485,12 @@ export default function LiveJobsClient() {
                     className="object-cover"
                   />
                 </div>
+
                 <div className="p-8">
-                  <h2 className="text-xl font-semibold">No live results found</h2>
+                  <h2 className="text-xl font-semibold">
+                    No live results found
+                  </h2>
+
                   <p className="mt-3 text-sm leading-6 text-slate-400">
                     Try a broader keyword, remove the location, switch the
                     country, or try another source.
@@ -523,10 +544,12 @@ export default function LiveJobsClient() {
                           <BriefcaseBusiness size={15} />
                           {job.company}
                         </span>
+
                         <span className="inline-flex items-center gap-1">
                           <MapPin size={15} />
                           {job.location || "No location"}
                         </span>
+
                         <span>{job.remote ? "Remote" : "On-site"}</span>
                       </div>
                     </div>
@@ -566,6 +589,7 @@ export default function LiveJobsClient() {
                       <p className="mb-3 font-semibold">
                         Why this may fit your profile
                       </p>
+
                       <div className="flex flex-wrap gap-2">
                         {rationale.map((item) => (
                           <span
@@ -581,6 +605,7 @@ export default function LiveJobsClient() {
 
                   <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-4 text-sm">
                     <p className="mb-2 font-semibold">Job preview</p>
+
                     <p className="leading-7 text-slate-300">
                       {descriptionToShow}
                     </p>
