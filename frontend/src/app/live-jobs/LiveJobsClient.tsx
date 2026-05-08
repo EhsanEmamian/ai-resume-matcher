@@ -306,7 +306,7 @@ export default function LiveJobsClient() {
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
                   className="block w-full rounded-2xl border border-white/10 bg-[#0f172a] px-4 py-3 text-sm text-slate-100"
-                  placeholder="software engineer"
+                  placeholder="e.g. backend engineer, python developer"
                   autoComplete="off"
                 />
 
