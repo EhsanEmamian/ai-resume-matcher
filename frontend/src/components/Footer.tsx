@@ -69,7 +69,7 @@ export default function Footer() {
       <div className="border-t border-white/10">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-6 py-4 text-xs text-white/50 sm:flex-row sm:items-center sm:justify-between">
           <p>Built by Ehsan Emamian</p>
-          <p>FastAPI · PostgreSQL · Next.js · Claude AI · Adzuna</p>
+          <p>FastAPI · PostgreSQL · Next.js · Claude AI · Adzuna · Arbeitnow</p>
         </div>
       </div>
     </footer>
