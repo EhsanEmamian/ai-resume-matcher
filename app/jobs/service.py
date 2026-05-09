@@ -58,41 +58,13 @@ def import_external_job(db: Session, payload: dict) -> tuple[str, JobPosting]:
     enrichment_failure_reason = None
     enrichment_result = None
 
-    print("DEBUG import_external_job source:", source)
-    print("DEBUG import_external_job source_id:", source_id)
-    print("DEBUG import_external_job source_url:", source_url)
-
     if source_url:
         enrichment_result = fetch_source_text_result(source_url)
         source_text = enrichment_result.text
         enrichment_status = enrichment_result.status
         enrichment_error = enrichment_result.error
         enrichment_failure_reason = enrichment_result.failure_reason
-
-        print(
-            "DEBUG import_external_job source_text length:",
-            len(source_text) if source_text else 0,
-        )
-        print("DEBUG import_external_job enrichment_status:", enrichment_status)
-        print(
-            "DEBUG import_external_job enrichment_failure_reason:",
-            enrichment_failure_reason,
-        )
-        print("DEBUG import_external_job enrichment_error:", enrichment_error)
-        print(
-            "DEBUG import_external_job raw_html_length:",
-            enrichment_result.raw_html_length if enrichment_result else None,
-        )
-        print(
-            "DEBUG import_external_job text_word_count:",
-            enrichment_result.text_word_count if enrichment_result else None,
-        )
-        print(
-            "DEBUG import_external_job text_preview:",
-            enrichment_result.text_preview if enrichment_result else None,
-        )
     else:
-        print("DEBUG import_external_job no source_url")
         enrichment_failure_reason = "no_url"
 
     extraction_text = source_text or description

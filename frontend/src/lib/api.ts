@@ -1,5 +1,7 @@
 const API_BASE_URL = "http://localhost:8000";
 
+export type JobSource = "adzuna" | "arbeitnow";
+
 export type ResumeProfile = {
   id: string;
   resume_id: string;
@@ -114,7 +116,7 @@ export type ExternalJobSearchRequest = {
   country: string;
   max_results: number;
   page: number;
-  source: string;
+  source: JobSource;
 };
 
 export type ExternalJobItem = {
@@ -151,6 +153,7 @@ export type ExternalJobSearchResult = {
   location: string;
   country: string;
   page: number;
+  source: JobSource;
 };
 
 export type ImportExternalJobResult = {

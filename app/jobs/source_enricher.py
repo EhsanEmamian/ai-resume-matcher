@@ -60,8 +60,6 @@ def fetch_source_text_result(url: str) -> SourceEnrichmentResult:
             error=None,
         )
 
-    print("DEBUG fetch_source_text_result url:", url)
-
     try:
         response = httpx.get(
             url,
@@ -94,10 +92,6 @@ def fetch_source_text_result(url: str) -> SourceEnrichmentResult:
             failure_reason="fetch_failed",
             error=str(exc),
         )
-
-    print("DEBUG fetch_source_text_result status:", response.status_code)
-    print("DEBUG fetch_source_text_result final_url:", str(response.url))
-    print("DEBUG fetch_source_text_result html length:", len(response.text))
 
     if response.status_code in {401, 403}:
         return SourceEnrichmentResult(
@@ -133,10 +127,6 @@ def fetch_source_text_result(url: str) -> SourceEnrichmentResult:
         "adzuna-jobsuche",
         "myability",
     ]
-
-    print("DEBUG fetch_source_text_result text length:", len(stripped))
-    print("DEBUG fetch_source_text_result word count:", text_word_count)
-    print("DEBUG fetch_source_text_result preview:", stripped[:500])
 
     if raw_html_length < 500:
         return SourceEnrichmentResult(

@@ -142,6 +142,7 @@ def search_external_jobs(
         location=payload.location,
         country=payload.country,
         page=payload.page,
+        source=payload.source,
     )
 
 

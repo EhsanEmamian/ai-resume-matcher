@@ -23,6 +23,7 @@ import {
   importExternalJob,
   searchExternalJobs,
   type ExternalJobItem,
+  type JobSource,
 } from "@/lib/api";
 
 const PRESET_SEARCHES = [
@@ -46,7 +47,7 @@ export default function LiveJobsClient() {
   const [keyword, setKeyword] = useState("software engineer");
   const [location, setLocation] = useState("");
   const [country, setCountry] = useState("de");
-  const [source, setSource] = useState("adzuna");
+  const [source, setSource] = useState<JobSource>("adzuna");
   const [maxResults, setMaxResults] = useState(10);
   const [page, setPage] = useState(1);
   const [profileHints, setProfileHints] = useState<string[]>([]);
@@ -88,7 +89,7 @@ export default function LiveJobsClient() {
       setCountry(countryFromUrl);
     }
 
-    if (sourceFromUrl) {
+    if (sourceFromUrl === "adzuna" || sourceFromUrl === "arbeitnow") {
       setSource(sourceFromUrl);
     }
 
@@ -380,7 +381,7 @@ export default function LiveJobsClient() {
 
                 <select
                   value={source}
-                  onChange={(e) => setSource(e.target.value)}
+                  onChange={(e) => setSource(e.target.value as JobSource)}
                   className="block w-full rounded-2xl border border-white/10 bg-[#0f172a] px-4 py-3 text-sm text-slate-100"
                 >
                   <option value="adzuna">Adzuna</option>
