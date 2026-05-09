@@ -1,6 +1,6 @@
 const API_BASE_URL = "http://localhost:8000";
 
-export type JobSource = "adzuna" | "arbeitnow";
+export type JobSource = "adzuna" | "arbeitnow" | "jooble";
 
 export type ResumeProfile = {
   id: string;

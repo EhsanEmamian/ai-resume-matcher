@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     ADZUNA_APP_KEY: str = ""
     ADZUNA_BASE_URL: str = "https://api.adzuna.com/v1/api/jobs"
 
+    JOOBLE_API_KEY: str = ""
+    JOOBLE_BASE_URL: str = "https://jooble.org/api"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -32,6 +31,9 @@ const PRESET_SEARCHES = [
   { keyword: "backend developer", location: "", country: "de" },
   { keyword: "java developer", location: "Vienna", country: "at" },
 ];
+
+const fieldClassName =
+  "block w-full rounded-2xl border border-white/10 bg-[#0F172A] px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-600 hover:border-white/20 focus:border-blue-400/50";
 
 function truncateText(text: string, maxLength = 260) {
   if (text.length <= maxLength) return text;
@@ -89,7 +91,11 @@ export default function LiveJobsClient() {
       setCountry(countryFromUrl);
     }
 
-    if (sourceFromUrl === "adzuna" || sourceFromUrl === "arbeitnow") {
+    if (
+      sourceFromUrl === "adzuna" ||
+      sourceFromUrl === "arbeitnow" ||
+      sourceFromUrl === "jooble"
+    ) {
       setSource(sourceFromUrl);
     }
 
@@ -225,7 +231,7 @@ export default function LiveJobsClient() {
         <Header />
 
         <main className="min-h-screen bg-[#0B1120] px-6 py-12 text-slate-100">
-          <div className="mx-auto max-w-6xl space-y-6">
+          <div className="mx-auto max-w-7xl space-y-6">
             <div className="rounded-[2rem] border border-white/10 bg-[#111827] p-8 shadow-sm">
               <Skeleton className="h-4 w-48" />
               <Skeleton className="mt-4 h-10 w-72" />
@@ -253,20 +259,20 @@ export default function LiveJobsClient() {
       <Header />
 
       <main className="min-h-screen bg-[#0B1120] px-6 py-12 text-slate-100">
-        <div className="mx-auto max-w-6xl space-y-6">
+        <div className="mx-auto max-w-7xl space-y-6">
           <section className="rounded-[2rem] border border-white/10 bg-[#111827] p-8 shadow-sm">
-            <p className="text-sm uppercase tracking-[0.2em] text-slate-400">
-              External Job Search
+            <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-blue-300">
+              Live job discovery
             </p>
 
-            <h1 className="mt-2 text-4xl font-bold tracking-tight">
-              Live Job Search
+            <h1 className="mt-3 text-4xl font-bold tracking-[-0.03em] text-slate-100 sm:text-5xl">
+              Search real jobs before saving them.
             </h1>
 
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-400">
-              Search jobs live from external sources without importing them
-              first. Live job previews are lightweight for fast scanning. Full
-              details and deeper extraction become available after saving.
+            <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-400">
+              Discover jobs from Adzuna, Arbeitnow, and Jooble, scan lightweight
+              previews, then save promising roles for deeper enrichment,
+              extraction, and resume matching.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-2">
@@ -275,7 +281,7 @@ export default function LiveJobsClient() {
                   key={index}
                   type="button"
                   onClick={() => applyPreset(preset)}
-                  className="rounded-2xl border border-white/10 bg-[#0f172a] px-4 py-2 text-sm font-medium text-slate-200"
+                  className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 font-mono text-xs text-slate-300 transition hover:border-blue-400/30 hover:bg-blue-400/10 hover:text-blue-200"
                 >
                   {preset.keyword}
                   {preset.location ? ` • ${preset.location}` : ""}
@@ -283,16 +289,19 @@ export default function LiveJobsClient() {
               ))}
             </div>
 
-            <div className="mt-5 rounded-2xl border border-blue-400/20 bg-blue-500/10 px-4 py-3 text-sm text-blue-200">
-              Live job previews · Full details, requirements, languages,
-              experience, and salary extraction become available after saving.
+            <div className="mt-6 rounded-2xl border border-blue-400/20 bg-blue-500/[0.08] px-4 py-3 text-sm leading-6 text-blue-100">
+              <span className="font-semibold">Source strategy:</span>{" "}
+              Adzuna gives broad coverage. Arbeitnow gives richer tech-oriented
+              descriptions. Jooble adds extra aggregator coverage.
               {source === "arbeitnow"
                 ? " Arbeitnow is currently selected for richer job descriptions."
-                : " Adzuna is currently selected for broader job volume."}
+                : source === "jooble"
+                  ? " Jooble is currently selected for additional aggregator coverage."
+                  : " Adzuna is currently selected for broader job volume."}
             </div>
           </section>
 
-          <section className="rounded-[2rem] border border-white/10 bg-[#111827] p-6 shadow-sm">
+          <section className="rounded-[2rem] border border-white/10 bg-[#111827] p-6 shadow-2xl shadow-black/20">
             <form
               onSubmit={handleSubmit}
               className="grid gap-4 md:grid-cols-2 lg:grid-cols-6"
@@ -306,7 +315,7 @@ export default function LiveJobsClient() {
                 <input
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
-                  className="block w-full rounded-2xl border border-white/10 bg-[#0f172a] px-4 py-3 text-sm text-slate-100"
+                  className={fieldClassName}
                   placeholder="e.g. backend engineer, python developer"
                   autoComplete="off"
                 />
@@ -340,7 +349,7 @@ export default function LiveJobsClient() {
                 <select
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="block w-full rounded-2xl border border-white/10 bg-[#0f172a] px-4 py-3 text-sm text-slate-100"
+                  className={fieldClassName}
                 >
                   <option value="">All cities</option>
                   {availableCities.map((city) => (
@@ -364,7 +373,7 @@ export default function LiveJobsClient() {
                 <select
                   value={country}
                   onChange={(e) => setCountry(e.target.value)}
-                  className="block w-full rounded-2xl border border-white/10 bg-[#0f172a] px-4 py-3 text-sm text-slate-100"
+                  className={fieldClassName}
                 >
                   {Object.entries(LOCATIONS).map(([value, config]) => (
                     <option key={value} value={value}>
@@ -382,15 +391,16 @@ export default function LiveJobsClient() {
                 <select
                   value={source}
                   onChange={(e) => setSource(e.target.value as JobSource)}
-                  className="block w-full rounded-2xl border border-white/10 bg-[#0f172a] px-4 py-3 text-sm text-slate-100"
+                  className={fieldClassName}
                 >
                   <option value="adzuna">Adzuna</option>
                   <option value="arbeitnow">Arbeitnow</option>
+                  <option value="jooble">Jooble</option>
                 </select>
 
                 <p className="mt-1 text-xs text-slate-500">
-                  Adzuna gives broader coverage. Arbeitnow usually gives richer
-                  job descriptions.
+                  Adzuna gives broad coverage. Arbeitnow gives richer tech
+                  descriptions. Jooble adds extra aggregator coverage.
                 </p>
               </div>
 
@@ -405,7 +415,7 @@ export default function LiveJobsClient() {
                   max={20}
                   value={page}
                   onChange={(e) => setPage(Number(e.target.value))}
-                  className="block w-full rounded-2xl border border-white/10 bg-[#0f172a] px-4 py-3 text-sm text-slate-100"
+                  className={fieldClassName}
                 />
               </div>
 
@@ -420,7 +430,7 @@ export default function LiveJobsClient() {
                   max={50}
                   value={maxResults}
                   onChange={(e) => setMaxResults(Number(e.target.value))}
-                  className="block w-full rounded-2xl border border-white/10 bg-[#0f172a] px-4 py-3 text-sm text-slate-100"
+                  className={fieldClassName}
                 />
               </div>
 
@@ -428,14 +438,14 @@ export default function LiveJobsClient() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="rounded-2xl bg-[#3B82F6] px-5 py-3 text-sm font-medium text-white shadow-sm disabled:opacity-50"
+                  className="rounded-2xl bg-[#3B82F6] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition hover:bg-[#2563EB] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {loading ? "Searching..." : "Search Live Jobs"}
                 </button>
               </div>
             </form>
 
-            <div className="mt-4 rounded-2xl border border-white/10 bg-[#0f172a] p-4 text-sm text-slate-300">
+            <div className="mt-4 rounded-2xl border border-white/10 bg-[#0F172A] p-4 text-sm text-slate-300">
               Good starting examples:
               <span className="font-medium"> software engineer</span>,
               <span className="font-medium"> python developer</span>,
@@ -468,35 +478,54 @@ export default function LiveJobsClient() {
           </section>
 
           {searched && (
-            <div className="text-sm text-slate-400">
-              Found <span className="font-semibold">{results.length}</span> live
-              results from <span className="font-semibold">{source}</span> on
-              page <span className="font-semibold">{page}</span>.
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#111827] px-5 py-4 text-sm text-slate-400">
+              <p>
+                Found{" "}
+                <span className="font-mono font-semibold text-slate-100">
+                  {results.length}
+                </span>{" "}
+                live results from{" "}
+                <span className="font-mono font-semibold text-blue-300">
+                  {source}
+                </span>{" "}
+                on page{" "}
+                <span className="font-mono font-semibold text-slate-100">
+                  {page}
+                </span>
+                .
+              </p>
+
+              <p className="font-mono text-xs text-slate-500">
+                Save jobs for enrichment and deeper matching
+              </p>
             </div>
           )}
 
           {searched && results.length === 0 ? (
-            <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#111827] shadow-sm">
-              <div className="grid lg:grid-cols-[0.9fr_1.1fr]">
-                <div className="relative min-h-[280px] bg-[#0f172a]">
-                  <Image
-                    src="/images/empty-no-live-results.png"
-                    alt="No live search results illustration"
-                    fill
-                    className="object-cover"
-                  />
-                </div>
+            <div className="rounded-[2rem] border border-white/10 bg-[#111827] p-10 text-center shadow-lg shadow-black/10">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-[#0F172A]">
+                <Search size={22} className="text-slate-400" />
+              </div>
 
-                <div className="p-8">
-                  <h2 className="text-xl font-semibold">
-                    No live results found
-                  </h2>
+              <h2 className="mt-5 text-xl font-semibold text-slate-100">
+                No live results found
+              </h2>
 
-                  <p className="mt-3 text-sm leading-6 text-slate-400">
-                    Try a broader keyword, remove the location, switch the
-                    country, or try another source.
-                  </p>
-                </div>
+              <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-slate-400">
+                Try a broader keyword, remove the city filter, switch the
+                country, or try the other source.
+              </p>
+
+              <div className="mt-5 flex flex-wrap justify-center gap-2 font-mono text-xs text-slate-500">
+                <span className="rounded-full border border-white/10 bg-[#0F172A] px-3 py-1.5">
+                  software engineer
+                </span>
+                <span className="rounded-full border border-white/10 bg-[#0F172A] px-3 py-1.5">
+                  backend developer
+                </span>
+                <span className="rounded-full border border-white/10 bg-[#0F172A] px-3 py-1.5">
+                  no city filter
+                </span>
               </div>
             </div>
           ) : (
@@ -521,7 +550,7 @@ export default function LiveJobsClient() {
               return (
                 <article
                   key={`${job.source_id}-${index}`}
-                  className="rounded-[2rem] border border-white/10 bg-[#111827] p-6 shadow-sm"
+                  className="group rounded-[2rem] border border-white/10 bg-[#111827] p-6 shadow-lg shadow-black/10 transition hover:border-blue-400/25 hover:bg-[#1B2537]"
                 >
                   <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div>
@@ -530,12 +559,12 @@ export default function LiveJobsClient() {
                           href={job.source_url}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-2xl font-semibold tracking-tight hover:underline"
+                          className="text-2xl font-semibold tracking-tight text-slate-100 transition group-hover:text-blue-200"
                         >
                           {job.title}
                         </a>
                       ) : (
-                        <h2 className="text-2xl font-semibold tracking-tight">
+                        <h2 className="text-2xl font-semibold tracking-tight text-slate-100">
                           {job.title}
                         </h2>
                       )}
@@ -556,15 +585,19 @@ export default function LiveJobsClient() {
                     </div>
 
                     <div className="flex flex-col gap-2">
-                      <div className="rounded-2xl bg-[#3B82F6] px-4 py-2 text-sm font-medium text-white">
-                        Live {job.source === "arbeitnow" ? "Arbeitnow" : "Adzuna"}
+                      <div className="rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1.5 text-center font-mono text-[11px] text-blue-200">
+                        {job.source === "arbeitnow"
+                          ? "Arbeitnow · richer text"
+                          : job.source === "jooble"
+                            ? "Jooble · aggregator"
+                            : "Adzuna · broad reach"}
                       </div>
 
                       <button
                         type="button"
                         onClick={() => handleSaveJob(job, index)}
                         disabled={isSaved || isSaving}
-                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-[#0f172a] px-4 py-2 text-sm font-medium text-slate-200 disabled:opacity-50"
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-[#0F172A] px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-blue-400/30 hover:bg-blue-500/10 hover:text-blue-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <Save size={15} />
                         {isSaved
@@ -586,9 +619,9 @@ export default function LiveJobsClient() {
                   </div>
 
                   {rationale.length > 0 && (
-                    <div className="mb-4 rounded-2xl border border-white/10 bg-[#0f172a] p-4 text-sm">
-                      <p className="mb-3 font-semibold">
-                        Why this may fit your profile
+                    <div className="mb-4 rounded-2xl border border-blue-400/15 bg-blue-500/[0.06] p-4 text-sm">
+                      <p className="mb-3 font-semibold text-blue-100">
+                        Profile rationale
                       </p>
 
                       <div className="flex flex-wrap gap-2">
@@ -604,8 +637,10 @@ export default function LiveJobsClient() {
                     </div>
                   )}
 
-                  <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-4 text-sm">
-                    <p className="mb-2 font-semibold">Job preview</p>
+                  <div className="rounded-2xl border border-white/10 bg-[#0F172A] p-5 text-sm">
+                    <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.16em] text-slate-500">
+                      Job preview
+                    </p>
 
                     <p className="leading-7 text-slate-300">
                       {descriptionToShow}

@@ -8,6 +8,7 @@ from app.exceptions import NotFoundError
 from app.jobs import ingestion, service
 from app.jobs.adzuna_client import search_jobs
 from app.jobs.arbeitnow_client import search_arbeitnow_jobs
+from app.jobs.jooble_client import search_jooble_jobs
 from app.jobs.schemas import (
     BackfillJobSkillsResult,
     ClearJobsBySourceResult,
@@ -125,6 +126,14 @@ def search_external_jobs(
             location=payload.location,
             page=payload.page,
             max_results=payload.max_results,
+        )
+    elif payload.source == "jooble":
+        jobs = search_jooble_jobs(
+            keyword=payload.keyword,
+            location=payload.location,
+            country=payload.country,
+            max_results=payload.max_results,
+            page=payload.page,
         )
     else:
         jobs = search_jobs(
