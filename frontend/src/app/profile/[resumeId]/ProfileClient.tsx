@@ -336,7 +336,7 @@ export default function ProfileClient({
                   href="/live-jobs"
                   className="rounded-2xl bg-[#3B82F6] px-4 py-2 text-sm font-medium text-white"
                 >
-                  Search with custom keyword
+                  Search manually
                 </Link>
               </div>
 
