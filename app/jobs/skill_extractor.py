@@ -46,6 +46,17 @@ KNOWN_SKILLS = [
     "kafka",
     "rabbitmq",
     "jenkins",
+    "next.js",
+    "nextjs",
+    "tailwind",
+    "tailwind css",
+    "graphql",
+    "llm",
+    "claude",
+    "chatgpt",
+    "openai",
+    "prompt engineering",
+    "langchain"
 ]
 
 
@@ -92,6 +103,17 @@ DISPLAY_NAMES = {
     "kafka": "Kafka",
     "rabbitmq": "RabbitMQ",
     "jenkins": "Jenkins",
+    "next.js": "Next.js",
+    "nextjs": "Next.js",
+    "tailwind": "Tailwind CSS",
+    "tailwind css": "Tailwind CSS",
+    "graphql": "GraphQL",
+    "llm": "LLMs",
+    "claude": "Claude AI",
+    "chatgpt": "ChatGPT",
+    "openai": "OpenAI",
+    "prompt engineering": "Prompt Engineering",
+    "langchain": "LangChain"
 }
 
 
