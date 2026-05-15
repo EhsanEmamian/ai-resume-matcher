@@ -118,7 +118,7 @@ DISPLAY_NAMES = {
 
 
 KNOWN_LANGUAGES = [
-    ("deutsch", "German"),
+   ("deutsch", "German"),
     ("german", "German"),
     ("englisch", "English"),
     ("english", "English"),
@@ -126,6 +126,16 @@ KNOWN_LANGUAGES = [
     ("persian", "Persian"),
     ("französisch", "French"),
     ("french", "French"),
+    ("spanisch", "Spanish"),
+    ("spanish", "Spanish"),
+    ("italienisch", "Italian"),
+    ("italian", "Italian"),
+    ("türkisch", "Turkish"),
+    ("turkish", "Turkish"),
+    ("niederländisch", "Dutch"),
+    ("dutch", "Dutch"),
+    ("arabisch", "Arabic"),
+    ("arabic", "Arabic"),
 ]
 
 
