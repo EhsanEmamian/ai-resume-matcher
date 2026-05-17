@@ -216,6 +216,13 @@ def extract_salary_text_from_text(title: str, description: str) -> str | None:
         r"\bmonatlich\b",
         r"\bjährlich\b",
         r"\bp\.a\.\b",
+        r"\bgehalt\b",
+        r"\bbruttogehalt\b",
+        r"\bbruttomonatsgehalt\b",
+        r"\bjahresbrutto\b",
+        r"\bkollektivvertrag\b",
+        r"\bkv-minimum\b",
+        r"\bverhandlungsbasis\b",
     ]
 
     for line in lines:
