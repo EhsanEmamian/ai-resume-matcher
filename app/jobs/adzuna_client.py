@@ -28,6 +28,21 @@ def _parse_posted_at(value: str | None) -> datetime | None:
         return None
 
 
+def _detect_remote(title: str, location: str | None, description: str) -> bool:
+    text = f"{title} {location or ''} {description}".lower()
+    return any(
+        term in text
+        for term in [
+            "remote",
+            "home office",
+            "homeoffice",
+            "work from home",
+            "fully remote",
+            "hybrid",
+        ]
+    )
+
+
 def _normalize_job(job: dict[str, Any]) -> dict[str, Any]:
     title = job.get("title") or "Untitled Job"
     description = job.get("description") or ""
@@ -58,7 +73,11 @@ def _normalize_job(job: dict[str, Any]) -> dict[str, Any]:
         "experience_requirement": extracted_experience,
         "salary_text": extracted_salary_text,
         "location": (job.get("location") or {}).get("display_name"),
-        "remote": False,
+        "remote": _detect_remote(
+            title, 
+            (job.get("location") or {}).get("display_name"), 
+            description
+        ),
         "source": "adzuna",
         "source_id": str(job.get("id")) if job.get("id") is not None else None,
         "source_url": job.get("redirect_url"),
