@@ -4,6 +4,12 @@ from datetime import datetime, timezone
 
 import httpx
 
+from app.jobs.skill_extractor import (
+    extract_experience_requirement_from_text,
+    extract_languages_from_text,
+    extract_salary_text_from_text,
+    extract_skills_from_text,
+)
 
 ARBEITNOW_API_URL = "https://www.arbeitnow.com/api/job-board-api"
 
@@ -30,9 +36,18 @@ def _normalize_arbeitnow_job(item: dict) -> dict:
 
     location = item.get("location") or None
     tags = item.get("tags") or []
-    remote = any("remote" in str(tag).lower() for tag in tags) or bool(
-        item.get("remote")
+    
+    # بهبود تشخیص ریموت با بررسی کلمات کلیدی (مثل Adzuna)
+    text_for_remote = f"{title} {location or ''} {description}".lower()
+    remote = any("remote" in str(tag).lower() for tag in tags) or bool(item.get("remote")) or any(
+        term in text_for_remote for term in ["remote", "home office", "homeoffice", "work from home", "hybrid"]
     )
+
+    # استخراج هوشمند اطلاعات از متن
+    extracted_skills = extract_skills_from_text(title, description)
+    extracted_languages = extract_languages_from_text(title, description)
+    extracted_experience = extract_experience_requirement_from_text(title, description)
+    extracted_salary_text = extract_salary_text_from_text(title, description)
 
     return {
         "source": "arbeitnow",
@@ -49,10 +64,10 @@ def _normalize_arbeitnow_job(item: dict) -> dict:
         "contract_type": None,
         "salary_min": None,
         "salary_max": None,
-        "salary_text": None,
-        "required_skills": [],
-        "required_languages": [],
-        "experience_requirement": None,
+        "salary_text": extracted_salary_text,
+        "required_skills": extracted_skills,
+        "required_languages": extracted_languages,
+        "experience_requirement": extracted_experience,
         "source_text": description or None,
         "enrichment_status": "success" if description else "not_attempted",
         "enrichment_error": None,
