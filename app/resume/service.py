@@ -13,6 +13,7 @@ from app.resume.models import Resume, ResumeProfile
 from app.resume.pdf_extractor import PDFExtractionError, extract_text_from_pdf
 from app.resume.text_utils import normalize_resume_text
 from app.resume.validation import ResumeValidationError, validate_resume_document
+from sqlalchemy import select, func
 
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -69,12 +70,13 @@ def _count_today_uploads_for_ip(db: Session, client_ip: str) -> int:
         tzinfo=timezone.utc,
     )
 
-    stmt = select(Resume).where(
+    # استفاده از دیتابیس برای شمارش (بسیار سریع‌تر و بهینه‌تر از شمردن در پایتون)
+    stmt = select(func.count()).select_from(Resume).where(
         Resume.client_ip == client_ip,
         Resume.uploaded_at >= start_of_day,
     )
 
-    return len(list(db.scalars(stmt).all()))
+    return db.scalar(stmt) or 0
 
 
 def create_resume(
