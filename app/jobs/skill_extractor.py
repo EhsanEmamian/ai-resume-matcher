@@ -118,7 +118,7 @@ DISPLAY_NAMES = {
 
 
 KNOWN_LANGUAGES = [
-   ("deutsch", "German"),
+    ("deutsch", "German"),
     ("german", "German"),
     ("englisch", "English"),
     ("english", "English"),
@@ -176,11 +176,19 @@ def extract_experience_requirement_from_text(
             lambda match: f"{match.group(1)}+ years of experience",
         ),
         (
+            r"\b(\d+)\s+years?\s+(?:of\s+)?experience\b",
+            lambda match: f"{match.group(1)} years of experience",
+        ),
+        (
+            r"\b(?:minimum|at\s+least)\s+(?:of\s+)?(\d+)\s+years?\b",
+            lambda match: f"Minimum {match.group(1)} years of experience",
+        ),
+        (
             r"\bmindestens\s+(\d+)\s+jahre\b",
             lambda match: f"At least {match.group(1)} years of experience",
         ),
         (
-            r"\b(\d+)\s+jahre\s+berufserfahrung\b",
+            r"\b(\d+)\s+jahre\s+(?:einschlägige\s+)?berufserfahrung\b",
             lambda match: f"{match.group(1)} years of professional experience",
         ),
     ]
@@ -211,7 +219,12 @@ def extract_salary_text_from_text(title: str, description: str) -> str | None:
     salary_patterns = [
         r"€\s?\d[\d\.\,]*",
         r"\d[\d\.\,]*\s?€",
+        r"\$\s?\d[\d\.\,]*",     # دلار (آمریکا/کانادا)
+        r"£\s?\d[\d\.\,]*",     # پوند (انگلیس)
+        r"\b\d{2,3}k\b",        # فرمت‌های رایج مثل 80k یا 120k
         r"\beur\b",
+        r"\busd\b",
+        r"\bgbp\b",
         r"\bbrutto\b",
         r"\bmonatlich\b",
         r"\bjährlich\b",
@@ -223,6 +236,8 @@ def extract_salary_text_from_text(title: str, description: str) -> str | None:
         r"\bkollektivvertrag\b",
         r"\bkv-minimum\b",
         r"\bverhandlungsbasis\b",
+        r"\b(?:annual\s+)?salary\b",  # حقوق سالانه انگلیسی
+        r"\bper\s+year\b",            # سالانه انگلیسی
     ]
 
     for line in lines:
