@@ -6,9 +6,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.exceptions import NotFoundError
 from app.jobs import ingestion, service
-from app.jobs.adzuna_client import search_jobs
-from app.jobs.arbeitnow_client import search_arbeitnow_jobs
-from app.jobs.jooble_client import search_jooble_jobs
+from app.jobs.base_client import get_job_client
 from app.jobs.schemas import (
     BackfillJobSkillsResult,
     ClearJobsBySourceResult,
@@ -120,29 +118,8 @@ def ingest_jobs(
 def search_external_jobs(
     payload: ExternalJobSearchRequest,
 ) -> ExternalJobSearchResult:
-    if payload.source == "arbeitnow":
-        jobs = search_arbeitnow_jobs(
-            keyword=payload.keyword,
-            location=payload.location,
-            page=payload.page,
-            max_results=payload.max_results,
-        )
-    elif payload.source == "jooble":
-        jobs = search_jooble_jobs(
-            keyword=payload.keyword,
-            location=payload.location,
-            country=payload.country,
-            max_results=payload.max_results,
-            page=payload.page,
-        )
-    else:
-        jobs = search_jobs(
-            keyword=payload.keyword,
-            location=payload.location,
-            country=payload.country,
-            max_results=payload.max_results,
-            page=payload.page,
-        )
+    client = get_job_client(payload.source)
+    jobs = client.search(payload)
 
     return ExternalJobSearchResult(
         total=len(jobs),

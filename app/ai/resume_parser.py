@@ -1,4 +1,8 @@
 import json
+import re
+from typing import Literal
+
+from pydantic import BaseModel, Field, ValidationError
 
 from app.ai.client import get_anthropic_client
 from app.config import settings
@@ -10,6 +14,25 @@ class ResumeParsingError(Exception):
 
 class ResumeAIUnavailableError(Exception):
     pass
+
+
+# با استفاده از سینتکس مدرن پایتون و مقادیر پیش‌فرض، جلوی کرش‌های Validation گرفته شد
+class ParsedResumeProfile(BaseModel):
+    skills: list[str] = Field(default_factory=list)
+    technologies: list[str] = Field(default_factory=list)
+    languages: list[str] = Field(default_factory=list)
+    years_of_experience: int | None = None
+    seniority_level: Literal["junior", "mid", "senior"] | None = None
+    suggested_roles: list[str] = Field(default_factory=list)
+
+
+def _extract_json_object(text: str) -> str:
+    """Helper to extract JSON block if AI wraps it in markdown"""
+    text = text.strip()
+    match = re.search(r"\{.*\}", text, re.DOTALL)
+    if match:
+        return match.group(0)
+    return text
 
 
 def build_resume_parsing_prompt(raw_text: str) -> str:
@@ -51,65 +74,61 @@ Resume text:
 
 
 def parse_resume_with_ai(raw_text: str) -> dict:
-    try:
-        client = get_anthropic_client()
-        prompt = build_resume_parsing_prompt(raw_text)
+    client = get_anthropic_client()
+    prompt = build_resume_parsing_prompt(raw_text)
 
+    # بخش اول: فقط خطاهای شبکه و API در اینجا مدیریت می‌شوند (پیشنهاد کلاد)
+    try:
         response = client.messages.create(
             model=settings.RESUME_PARSING_MODEL,
             max_tokens=1000,
             temperature=0,
-            messages=[
-                {"role": "user", "content": prompt}
-            ],
+            messages=[{"role": "user", "content": prompt}],
         )
-
-        text_parts: list[str] = []
-
-        for block in response.content:
-            if getattr(block, "type", None) == "text":
-                text_parts.append(block.text)
-
-        raw_output = "\n".join(text_parts).strip()
-
-        if not raw_output:
-            raise ResumeParsingError("AI returned an empty response.")
-
-        try:
-            parsed = json.loads(raw_output)
-        except json.JSONDecodeError as exc:
-            raise ResumeParsingError(
-                f"AI did not return valid JSON. Raw output: {raw_output}"
-            ) from exc
-
-        required_keys = {
-            "skills",
-            "technologies",
-            "languages",
-            "years_of_experience",
-            "seniority_level",
-            "suggested_roles",
-        }
-
-        missing = required_keys - set(parsed.keys())
-        if missing:
-            raise ResumeParsingError(f"AI response is missing keys: {sorted(missing)}")
-
-        return parsed
-
-    except ResumeParsingError:
-        raise
     except Exception as exc:
         message = str(exc).lower()
-
         if "credit balance is too low" in message:
             raise ResumeAIUnavailableError(
-                "AI resume parsing is temporarily unavailable. Please try again later or check API billing configuration."
+                "AI resume parsing is temporarily unavailable. Please check API billing."
             ) from exc
-
         if "api key" in message or "authentication" in message:
             raise ResumeAIUnavailableError(
-                "AI resume parsing is temporarily unavailable due to AI provider configuration."
+                "AI resume parsing unavailable due to provider configuration."
             ) from exc
+        raise ResumeAIUnavailableError(
+            f"AI provider returned an unexpected error: {exc}"
+        ) from exc
 
-        raise ResumeParsingError("Resume parsing failed. Please try again later.") from exc
+    # بخش دوم: استخراج متن و پارسینگ
+    text_parts = [
+        block.text
+        for block in response.content
+        if getattr(block, "type", None) == "text"
+    ]
+    raw_output = "\n".join(text_parts).strip()
+
+    if not raw_output:
+        raise ResumeParsingError("AI returned an empty response.")
+
+    cleaned_json_str = _extract_json_object(raw_output)
+
+    try:
+        parsed = json.loads(cleaned_json_str)
+    except json.JSONDecodeError as exc:
+        raise ResumeParsingError(
+            f"AI did not return valid JSON. Raw output: {raw_output}"
+        ) from exc
+
+    try:
+        validated = ParsedResumeProfile(
+            skills=parsed.get("skills", []),
+            technologies=parsed.get("technologies", []),
+            languages=parsed.get("languages", []),
+            years_of_experience=parsed.get("years_of_experience"),
+            seniority_level=parsed.get("seniority_level"),
+            suggested_roles=parsed.get("suggested_roles", []),
+        )
+    except ValidationError as exc:
+        raise ResumeParsingError(f"Failed to validate resume fields: {exc}") from exc
+
+    return validated.model_dump()

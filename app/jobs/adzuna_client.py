@@ -5,6 +5,8 @@ import httpx
 
 from app.config import settings
 from app.exceptions import AppError
+from app.jobs.base_client import BaseJobProvider
+from app.jobs.schemas import ExternalJobSearchRequest
 from app.jobs.skill_extractor import (
     extract_experience_requirement_from_text,
     extract_languages_from_text,
@@ -74,8 +76,8 @@ def _normalize_job(job: dict[str, Any]) -> dict[str, Any]:
         "salary_text": extracted_salary_text,
         "location": (job.get("location") or {}).get("display_name"),
         "remote": _detect_remote(
-            title, 
-            (job.get("location") or {}).get("display_name"), 
+            title,
+            (job.get("location") or {}).get("display_name"),
             description
         ),
         "source": "adzuna",
@@ -89,6 +91,44 @@ def _normalize_job(job: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+class AdzunaClient(BaseJobProvider):
+    def search(self, request: ExternalJobSearchRequest) -> list[dict[str, Any]]:
+        if not settings.ADZUNA_APP_ID or not settings.ADZUNA_APP_KEY:
+            raise AdzunaClientError("Adzuna credentials are not configured.", status_code=400)
+
+        url = f"{settings.ADZUNA_BASE_URL}/{request.country}/search/{request.page}"
+
+        params = {
+            "app_id": settings.ADZUNA_APP_ID,
+            "app_key": settings.ADZUNA_APP_KEY,
+            "results_per_page": request.max_results,
+            "what": request.keyword,
+        }
+
+        if request.location.strip():
+            params["where"] = request.location.strip()
+
+        try:
+            response = httpx.get(url, params=params, timeout=20.0)
+            response.raise_for_status()
+        except httpx.TimeoutException as exc:
+            raise AdzunaClientError("Adzuna request timed out.") from exc
+        except httpx.HTTPStatusError as exc:
+            raise AdzunaClientError(
+                f"Adzuna API returned HTTP {exc.response.status_code}."
+            ) from exc
+        except httpx.HTTPError as exc:
+            raise AdzunaClientError("Failed to connect to Adzuna API.") from exc
+
+        data = response.json()
+        results = data.get("results", [])
+
+        if not isinstance(results, list):
+            raise AdzunaClientError("Unexpected Adzuna response format.")
+
+        return [_normalize_job(job) for job in results]
+
+
 def search_jobs(
     keyword: str,
     location: str,
@@ -96,40 +136,16 @@ def search_jobs(
     max_results: int,
     page: int = 1,
 ) -> list[dict[str, Any]]:
-    if not settings.ADZUNA_APP_ID or not settings.ADZUNA_APP_KEY:
-        raise AdzunaClientError("Adzuna credentials are not configured.", status_code=400)
-
-    url = f"{settings.ADZUNA_BASE_URL}/{country}/search/{page}"
-
-    params = {
-        "app_id": settings.ADZUNA_APP_ID,
-        "app_key": settings.ADZUNA_APP_KEY,
-        "results_per_page": max_results,
-        "what": keyword,
-    }
-
-    if location.strip():
-        params["where"] = location.strip()
-
-    try:
-        response = httpx.get(url, params=params, timeout=20.0)
-        response.raise_for_status()
-    except httpx.TimeoutException as exc:
-        raise AdzunaClientError("Adzuna request timed out.") from exc
-    except httpx.HTTPStatusError as exc:
-        raise AdzunaClientError(
-            f"Adzuna API returned HTTP {exc.response.status_code}."
-        ) from exc
-    except httpx.HTTPError as exc:
-        raise AdzunaClientError("Failed to connect to Adzuna API.") from exc
-
-    data = response.json()
-    results = data.get("results", [])
-
-    if not isinstance(results, list):
-        raise AdzunaClientError("Unexpected Adzuna response format.")
-
-    return [_normalize_job(job) for job in results]
+    return AdzunaClient().search(
+        ExternalJobSearchRequest(
+            keyword=keyword,
+            location=location,
+            country=country,
+            max_results=max_results,
+            page=page,
+            source="adzuna",
+        )
+    )
 
 
 def fetch_jobs(
