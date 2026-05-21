@@ -46,10 +46,10 @@ export default function LiveJobsClient() {
   const [didAutoSearch, setDidAutoSearch] = useState(false);
   const [prefilledFromUrl, setPrefilledFromUrl] = useState(false);
 
-  const [keyword, setKeyword] = useState("software engineer");
+  const [keyword, setKeyword] = useState("");
   const [location, setLocation] = useState("");
   const [country, setCountry] = useState("de");
-  const [source, setSource] = useState<JobSource>("adzuna");
+  const [source, setSource] = useState<JobSource>("arbeitnow");
   const [maxResults, setMaxResults] = useState(10);
   const [page, setPage] = useState(1);
   const [profileHints, setProfileHints] = useState<string[]>([]);

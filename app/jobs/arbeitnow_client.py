@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import html
+import re
 from datetime import datetime, timezone
 
 import httpx
@@ -26,10 +28,32 @@ def _parse_posted_at(value: str | None) -> datetime | None:
         return None
 
 
+def _strip_html(text: str | None) -> str:
+    if not text:
+        return ""
+
+    text = html.unescape(text)
+    text = re.sub(r"(?is)<script.*?>.*?</script>", " ", text)
+    text = re.sub(r"(?is)<style.*?>.*?</style>", " ", text)
+    
+    # تبدیل تگ‌های بلوکی به خط جدید برای حفظ خوانایی متن و ساختار بولت‌پوینت‌ها
+    text = re.sub(r"(?i)</?(p|div|br|li|ul|ol|h1|h2|h3|h4|section|article|tr|td|th)[^>]*>", "\n", text)
+    text = re.sub(r"(?s)<[^>]+>", " ", text)
+    
+    text = re.sub(r"[ \t\r\f\v]+", " ", text)
+    text = re.sub(r"\n\s*\n\s*\n+", "\n\n", text)
+    text = re.sub(r" *\n *", "\n", text)
+    
+    return text.strip()
+
+
 def _normalize_arbeitnow_job(item: dict) -> dict:
     title = item.get("title") or "Untitled job"
     company = item.get("company_name") or "Unknown company"
-    description = item.get("description") or ""
+    
+    raw_description = item.get("description") or ""
+    description = _strip_html(raw_description)
+    
     slug = item.get("slug") or ""
 
     url = item.get("url") or (
