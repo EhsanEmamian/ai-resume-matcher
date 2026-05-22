@@ -20,6 +20,8 @@ export const PRESET_SEARCHES = [
 
 export type LiveJobPreset = (typeof PRESET_SEARCHES)[number];
 
+export const LIVE_JOBS_PAGE_SIZE = 20;
+
 export function useLiveJobs() {
   const searchParams = useSearchParams();
 
@@ -30,13 +32,14 @@ export function useLiveJobs() {
   const [location, setLocation] = useState("");
   const [country, setCountry] = useState("de");
   const [source, setSource] = useState<JobSource>("arbeitnow");
-  const [maxResults, setMaxResults] = useState(10);
-  const [page, setPage] = useState(1);
   const [profileHints, setProfileHints] = useState<string[]>([]);
 
+  const [page, setPage] = useState(1);
   const [results, setResults] = useState<ExternalJobItem[]>([]);
+  const [hasMoreResults, setHasMoreResults] = useState(false);
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState("");
   const [expandedIndexes, setExpandedIndexes] = useState<number[]>([]);
   const [savedJobIds, setSavedJobIds] = useState<Record<string, string>>({});
@@ -93,7 +96,7 @@ export function useLiveJobs() {
       );
     }
 
-    if (autoFromUrl === "1" && keywordFromUrl) {
+    if (autoFromUrl === "1") {
       setPrefilledFromUrl(true);
     }
   }, [searchParams]);
@@ -104,24 +107,38 @@ export function useLiveJobs() {
     }
   }, [country, location, availableCities]);
 
-  const executeSearch = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    setSearched(false);
-    setExpandedIndexes([]);
-
-    try {
+  const fetchResultsPage = useCallback(
+    async (pageToFetch: number, append: boolean) => {
       const data = await searchExternalJobs({
         keyword,
         location,
         country,
         source,
-        max_results: maxResults,
-        page,
+        max_results: LIVE_JOBS_PAGE_SIZE,
+        page: pageToFetch,
       });
 
-      setResults(data.items);
+      setResults((prev) =>
+        append ? [...prev, ...data.items] : data.items
+      );
+      setPage(pageToFetch);
+      setHasMoreResults(data.items.length >= LIVE_JOBS_PAGE_SIZE);
       setSearched(true);
+
+      return data;
+    },
+    [keyword, location, country, source]
+  );
+
+  const executeSearch = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    setSearched(false);
+    setExpandedIndexes([]);
+    setHasMoreResults(false);
+
+    try {
+      await fetchResultsPage(1, false);
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Failed to search live jobs.";
@@ -129,20 +146,37 @@ export function useLiveJobs() {
     } finally {
       setLoading(false);
     }
-  }, [keyword, location, country, source, maxResults, page]);
+  }, [fetchResultsPage]);
+
+  const loadMore = useCallback(async () => {
+    if (isLoadingMore || loading || !hasMoreResults) return;
+
+    setIsLoadingMore(true);
+    setError("");
+
+    try {
+      await fetchResultsPage(page + 1, true);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Failed to load more jobs.";
+      setError(message);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [
+    fetchResultsPage,
+    hasMoreResults,
+    isLoadingMore,
+    loading,
+    page,
+  ]);
 
   useEffect(() => {
     if (!prefilledFromUrl || didAutoSearch) return;
-    if (!keyword.trim()) return;
 
     setDidAutoSearch(true);
     void executeSearch();
-  }, [
-    prefilledFromUrl,
-    didAutoSearch,
-    keyword,
-    executeSearch,
-  ]);
+  }, [prefilledFromUrl, didAutoSearch, executeSearch]);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -156,7 +190,6 @@ export function useLiveJobs() {
     setKeyword(preset.keyword);
     setLocation(preset.location);
     setCountry(preset.country);
-    setPage(1);
   }, []);
 
   const toggleExpanded = useCallback((index: number) => {
@@ -207,17 +240,16 @@ export function useLiveJobs() {
     setCountry,
     source,
     setSource,
-    maxResults,
-    setMaxResults,
-    page,
-    setPage,
     profileHints,
     availableCities,
     keywordSuggestions,
     showKeywordSuggestions,
     results,
+    hasMoreResults,
     searched,
     loading,
+    isLoadingMore,
+    loadMore,
     error,
     expandedIndexes,
     savedJobIds,

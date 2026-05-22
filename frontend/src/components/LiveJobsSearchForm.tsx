@@ -20,10 +20,6 @@ type LiveJobsSearchFormProps = {
   onCountryChange: (value: string) => void;
   source: JobSource;
   onSourceChange: (value: JobSource) => void;
-  page: number;
-  onPageChange: (value: number) => void;
-  maxResults: number;
-  onMaxResultsChange: (value: number) => void;
   profileHints: string[];
   loading: boolean;
   error: string;
@@ -42,10 +38,6 @@ export default function LiveJobsSearchForm({
   onCountryChange,
   source,
   onSourceChange,
-  page,
-  onPageChange,
-  maxResults,
-  onMaxResultsChange,
   profileHints,
   loading,
   error,
@@ -53,11 +45,8 @@ export default function LiveJobsSearchForm({
 }: LiveJobsSearchFormProps) {
   return (
     <section className="rounded-[2rem] border border-white/10 bg-[#111827] p-6 shadow-2xl shadow-black/20">
-      <form
-        onSubmit={onSubmit}
-        className="grid gap-4 md:grid-cols-2 lg:grid-cols-6"
-      >
-        <div className="relative lg:col-span-2">
+      <form onSubmit={onSubmit} className="grid gap-4 md:grid-cols-2">
+        <div className="relative md:col-span-2">
           <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-200">
             <Search size={16} />
             Keyword
@@ -67,7 +56,7 @@ export default function LiveJobsSearchForm({
             value={keyword}
             onChange={(e) => onKeywordChange(e.target.value)}
             className={fieldClassName}
-            placeholder="e.g. backend engineer, python developer"
+            placeholder="e.g., Python Developer (or leave empty for all jobs)"
             autoComplete="off"
           />
 
@@ -87,7 +76,7 @@ export default function LiveJobsSearchForm({
           )}
 
           <p className="mt-1 text-xs text-slate-500">
-            Broader searches often work better than narrow titles.
+            Leave empty to browse all jobs in your selected country and source.
           </p>
         </div>
 
@@ -134,7 +123,7 @@ export default function LiveJobsSearchForm({
           </select>
         </div>
 
-        <div>
+        <div className="md:col-span-2">
           <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-200">
             Job source
           </label>
@@ -155,37 +144,7 @@ export default function LiveJobsSearchForm({
           </p>
         </div>
 
-        <div>
-          <label className="mb-2 block text-sm font-medium text-slate-200">
-            Page
-          </label>
-
-          <input
-            type="number"
-            min={1}
-            max={20}
-            value={page}
-            onChange={(e) => onPageChange(Number(e.target.value))}
-            className={fieldClassName}
-          />
-        </div>
-
-        <div>
-          <label className="mb-2 block text-sm font-medium text-slate-200">
-            Max results
-          </label>
-
-          <input
-            type="number"
-            min={1}
-            max={50}
-            value={maxResults}
-            onChange={(e) => onMaxResultsChange(Number(e.target.value))}
-            className={fieldClassName}
-          />
-        </div>
-
-        <div className="md:col-span-2 lg:col-span-6">
+        <div className="md:col-span-2">
           <button
             type="submit"
             disabled={loading}
