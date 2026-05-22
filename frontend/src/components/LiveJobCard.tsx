@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import Link from "next/link";
 import {
   ArrowUpRight,
@@ -9,6 +10,18 @@ import {
 } from "lucide-react";
 import { deriveLiveJobRationale } from "@/lib/liveJobRationale";
 import type { ExternalJobItem } from "@/lib/api";
+
+export const liveJobCardVariants = {
+  hidden: { opacity: 0, y: 24 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.45,
+      ease: [0.22, 1, 0.36, 1] as const,
+    },
+  },
+};
 
 function truncateText(text: string, maxLength = 260) {
   if (text.length <= maxLength) return text;
@@ -52,7 +65,10 @@ export default function LiveJobCard({
   });
 
   return (
-    <article className="group rounded-[2rem] border border-white/10 bg-[#111827] p-6 shadow-lg shadow-black/10 transition hover:border-blue-400/25 hover:bg-[#1B2537]">
+    <motion.article
+      variants={liveJobCardVariants}
+      className="group rounded-[2rem] border border-white/10 bg-[#111827] p-6 shadow-lg shadow-black/10 transition-all duration-300 hover:border-blue-500/30 hover:shadow-[0_0_20px_rgba(59,130,246,0.15)]"
+    >
       <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           {job.source_url ? (
@@ -163,6 +179,6 @@ export default function LiveJobCard({
           </a>
         </div>
       )}
-    </article>
+    </motion.article>
   );
 }

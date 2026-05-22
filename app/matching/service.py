@@ -1,3 +1,4 @@
+import re
 import uuid
 from datetime import datetime, timezone
 
@@ -16,10 +17,14 @@ def _normalize_list(values: list[str]) -> set[str]:
 
 def _role_overlap_score(suggested_roles: list[str], job_title: str) -> tuple[float, str | None]:
     normalized_roles = _normalize_list(suggested_roles)
-    title = job_title.strip().lower()
+    title_lower = job_title.strip().lower()
 
     for role in normalized_roles:
-        if role in title or title in role:
+        # استفاده از رجکس برای اطمینان از اینکه نقش پیشنهادی به عنوان یک کلمه مستقل در عنوان شغل وجود دارد
+        escaped_role = re.escape(role)
+        pattern = rf"(?<!\w){escaped_role}(?!\w)"
+        
+        if re.search(pattern, title_lower):
             return 0.3, f"Role alignment: '{job_title}' matches suggested role '{role}'."
 
     return 0.0, None

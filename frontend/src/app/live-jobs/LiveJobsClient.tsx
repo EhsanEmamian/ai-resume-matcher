@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { Search } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -7,6 +8,16 @@ import { Skeleton, SkeletonCard } from "@/components/Skeleton";
 import LiveJobsSearchForm from "@/components/LiveJobsSearchForm";
 import LiveJobCard from "@/components/LiveJobCard";
 import { PRESET_SEARCHES, useLiveJobs } from "@/hooks/useLiveJobs";
+
+const liveJobListVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
 
 export default function LiveJobsClient() {
   const {
@@ -191,26 +202,33 @@ export default function LiveJobsClient() {
               </div>
             </div>
           ) : (
-            results.map((job, index) => {
-              const saveKey = getSaveKey(job, index);
-              const savedJobId = savedJobIds[saveKey];
+            <motion.div
+              className="space-y-6"
+              variants={liveJobListVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              {results.map((job, index) => {
+                const saveKey = getSaveKey(job, index);
+                const savedJobId = savedJobIds[saveKey];
 
-              return (
-                <LiveJobCard
-                  key={`${job.source_id}-${index}`}
-                  job={job}
-                  index={index}
-                  keyword={keyword}
-                  profileHints={profileHints}
-                  isExpanded={expandedIndexes.includes(index)}
-                  onToggleExpanded={toggleExpanded}
-                  isSaved={Boolean(savedJobId)}
-                  isSaving={savingJobIds.includes(saveKey)}
-                  savedJobId={savedJobId}
-                  onSave={handleSaveJob}
-                />
-              );
-            })
+                return (
+                  <LiveJobCard
+                    key={`${job.source_id}-${index}`}
+                    job={job}
+                    index={index}
+                    keyword={keyword}
+                    profileHints={profileHints}
+                    isExpanded={expandedIndexes.includes(index)}
+                    onToggleExpanded={toggleExpanded}
+                    isSaved={Boolean(savedJobId)}
+                    isSaving={savingJobIds.includes(saveKey)}
+                    savedJobId={savedJobId}
+                    onSave={handleSaveJob}
+                  />
+                );
+              })}
+            </motion.div>
           )}
         </div>
       </main>
