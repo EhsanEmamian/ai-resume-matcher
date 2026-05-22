@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -47,9 +47,21 @@ def create_job(
 )
 def import_external_job(
     payload: ImportExternalJobRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ) -> ImportExternalJobResult:
-    status_value, job = service.import_external_job(db, payload.model_dump())
+    payload_data = payload.model_dump()
+    status_value, job, enqueue_enrichment = service.import_external_job(
+        db, payload_data
+    )
+
+    if enqueue_enrichment:
+        background_tasks.add_task(
+            service.enrich_job_background,
+            job.id,
+            payload_data,
+        )
+
     return ImportExternalJobResult(status=status_value, job=job)
 
 
