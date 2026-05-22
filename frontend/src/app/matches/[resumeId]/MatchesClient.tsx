@@ -469,7 +469,8 @@ if (loading) {
               className="space-y-6"
               variants={matchListVariants}
               initial="hidden"
-              animate="visible"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-50px" }}
             >
               {filteredMatches.map((match) => (
                 <motion.article

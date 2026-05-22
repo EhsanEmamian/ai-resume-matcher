@@ -1,10 +1,45 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import {
+  animate,
+  motion,
+  useMotionValue,
+  useMotionValueEvent,
+  useTransform,
+} from "framer-motion";
 
 function SkillBadge({ children }: { children: React.ReactNode }) {
   return (
     <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 font-mono text-[11px] text-slate-300">
       {children}
     </span>
+  );
+}
+
+const MOCK_ANIMATION_DURATION = 1.5;
+const MOCK_ANIMATION_EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+function AnimatedExperienceYears({ target = 3 }: { target?: number }) {
+  const count = useMotionValue(0);
+  const rounded = useTransform(count, (value) => Math.round(value));
+  const [display, setDisplay] = useState(0);
+
+  useMotionValueEvent(rounded, "change", setDisplay);
+
+  useEffect(() => {
+    const controls = animate(count, target, {
+      duration: MOCK_ANIMATION_DURATION,
+      ease: MOCK_ANIMATION_EASE,
+    });
+    return controls.stop;
+  }, [count, target]);
+
+  return (
+    <p className="mt-1 font-mono text-sm text-slate-100">
+      {display} years
+    </p>
   );
 }
 
@@ -18,7 +53,7 @@ function MatchRow({
   company: string;
   title: string;
   score: number;
-  tone: "success" | "warning" | "muted";
+  tone: "success" | "warning" | "info";
   enriched?: boolean;
 }) {
   const barColor =
@@ -26,7 +61,22 @@ function MatchRow({
       ? "bg-emerald-500"
       : tone === "warning"
         ? "bg-amber-500"
-        : "bg-slate-500";
+        : "bg-blue-500";
+
+  const progress = useMotionValue(0);
+  const rounded = useTransform(progress, (value) => Math.round(value));
+  const barWidth = useTransform(progress, (value) => `${value}%`);
+  const [displayScore, setDisplayScore] = useState(0);
+
+  useMotionValueEvent(rounded, "change", setDisplayScore);
+
+  useEffect(() => {
+    const controls = animate(progress, score, {
+      duration: MOCK_ANIMATION_DURATION,
+      ease: MOCK_ANIMATION_EASE,
+    });
+    return controls.stop;
+  }, [progress, score]);
 
   return (
     <div className="rounded-2xl border border-white/10 bg-[#0F172A] p-4">
@@ -46,12 +96,15 @@ function MatchRow({
         </div>
 
         <p className="font-mono text-sm font-semibold text-slate-100">
-          {score}%
+          {displayScore}%
         </p>
       </div>
 
       <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-800">
-        <div className={`h-full rounded-full ${barColor}`} style={{ width: `${score}%` }} />
+        <motion.div
+          className={`h-full rounded-full ${barColor}`}
+          style={{ width: barWidth }}
+        />
       </div>
     </div>
   );
@@ -100,9 +153,7 @@ function DashboardMockup() {
                   <p className="font-mono text-[11px] text-slate-500">
                     Experience
                   </p>
-                  <p className="mt-1 font-mono text-sm text-slate-100">
-                    3 years
-                  </p>
+                  <AnimatedExperienceYears target={3} />
                 </div>
 
                 <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
@@ -145,7 +196,7 @@ function DashboardMockup() {
                 company="DataCraft"
                 title="Junior Backend Dev"
                 score={64}
-                tone="muted"
+                tone="info"
               />
             </div>
           </div>

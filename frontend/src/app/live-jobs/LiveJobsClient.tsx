@@ -206,7 +206,8 @@ export default function LiveJobsClient() {
               className="space-y-6"
               variants={liveJobListVariants}
               initial="hidden"
-              animate="visible"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-50px" }}
             >
               {results.map((job, index) => {
                 const saveKey = getSaveKey(job, index);
