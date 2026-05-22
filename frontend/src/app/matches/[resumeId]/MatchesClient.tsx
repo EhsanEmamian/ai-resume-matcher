@@ -9,7 +9,9 @@ import {
   Sparkles,
   Target,
 } from "lucide-react";
+import { motion } from "framer-motion";
 import { use, useEffect, useMemo, useState } from "react";
+import AnimatedCircularProgress from "@/components/AnimatedCircularProgress";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AlertBanner from "@/components/AlertBanner";
@@ -34,12 +36,6 @@ function scoreBadgeClass(score: number) {
   return "bg-slate-500/15 text-slate-300 border border-slate-400/20";
 }
 
-function scoreBarClass(score: number) {
-  if (score >= 0.7) return "bg-emerald-400";
-  if (score >= 0.4) return "bg-amber-400";
-  return "bg-slate-400";
-}
-
 function matchesFilter(match: MatchItem, filter: FilterValue) {
   if (filter === "all") return true;
   if (filter === "strong") return match.score >= 0.7;
@@ -50,6 +46,28 @@ function matchesFilter(match: MatchItem, filter: FilterValue) {
 function scorePercent(score: number) {
   return Math.round(score * 100);
 }
+
+const matchListVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const matchCardVariants = {
+  hidden: { opacity: 0, y: 24 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.45,
+      ease: [0.22, 1, 0.36, 1] as const,
+    },
+  },
+};
 
 const SCORE_BREAKDOWN_MAX = {
   skill: 0.7,
@@ -447,39 +465,47 @@ if (loading) {
               </div>
             </div>
           ) : (
-            filteredMatches.map((match) => (
-              <article
-                key={match.id}
-                className="rounded-[2rem] border border-white/10 bg-[#111827] p-6 shadow-sm"
-              >
-                <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <h2 className="text-2xl font-semibold tracking-tight">
-                      <Link href={`/jobs/${match.job.id}`} className="hover:underline">
-                        {match.job.title}
-                      </Link>
-                    </h2>
-                    <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-400">
-                      <span className="inline-flex items-center gap-1">
-                        <BriefcaseBusiness size={15} />
-                        {match.job.company}
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <MapPin size={15} />
-                        {match.job.location || "No location"}
-                      </span>
-                      <span>{match.job.remote ? "Remote" : "On-site"}</span>
+            <motion.div
+              className="space-y-6"
+              variants={matchListVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              {filteredMatches.map((match) => (
+                <motion.article
+                  key={match.id}
+                  variants={matchCardVariants}
+                  className="rounded-[2rem] border border-white/10 bg-[#111827] p-6 shadow-sm transition-all duration-300 hover:border-blue-500/30 hover:shadow-[0_0_20px_rgba(59,130,246,0.15)]"
+                >
+                  <div className="mb-5 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0 flex-1">
+                      <h2 className="text-2xl font-semibold tracking-tight">
+                        <Link href={`/jobs/${match.job.id}`} className="hover:underline">
+                          {match.job.title}
+                        </Link>
+                      </h2>
+                      <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-400">
+                        <span className="inline-flex items-center gap-1">
+                          <BriefcaseBusiness size={15} />
+                          {match.job.company}
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <MapPin size={15} />
+                          {match.job.location || "No location"}
+                        </span>
+                        <span>{match.job.remote ? "Remote" : "On-site"}</span>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="min-w-[190px] rounded-2xl bg-[#0f172a] px-4 py-4 text-white border border-white/10">
-                    <p className="text-xs uppercase tracking-wide text-white/60">
-                      Match Score
-                    </p>
-                    <div className="mt-2 flex items-end justify-between gap-3">
-                      <p className="font-mono text-3xl font-bold">
-                        {scorePercent(match.score)}%
+                    <div className="flex shrink-0 flex-col items-center gap-3 rounded-2xl border border-white/10 bg-[#0f172a] px-5 py-5 sm:min-w-[200px]">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        Match Score
                       </p>
+                      <AnimatedCircularProgress
+                        score={match.score}
+                        size={120}
+                        label=""
+                      />
                       <span
                         className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${scoreBadgeClass(
                           match.score
@@ -488,17 +514,7 @@ if (loading) {
                         {scoreLabel(match.score)}
                       </span>
                     </div>
-
-                    <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-white/10">
-                      <div
-                        className={`h-full rounded-full transition-all duration-500 ${scoreBarClass(
-                          match.score
-                        )}`}
-                        style={{ width: `${scorePercent(match.score)}%` }}
-                      />
-                    </div>
                   </div>
-                </div>
 
                 <div className="mb-4 rounded-2xl border border-white/10 bg-[#0f172a] p-4">
                   <p className="mb-2 text-sm font-semibold">Why this match?</p>
@@ -541,8 +557,9 @@ if (loading) {
                     {match.job.description}
                   </p>
                 </div>
-              </article>
-            ))
+                </motion.article>
+              ))}
+            </motion.div>
           )}
 
           <div>
