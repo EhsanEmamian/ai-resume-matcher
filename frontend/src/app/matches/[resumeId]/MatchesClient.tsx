@@ -51,6 +51,140 @@ function scorePercent(score: number) {
   return Math.round(score * 100);
 }
 
+const SCORE_BREAKDOWN_MAX = {
+  skill: 0.7,
+  role: 0.3,
+  remote: 0.1,
+} as const;
+
+function breakdownFillPercent(value: number, max: number) {
+  if (max <= 0) return 0;
+  return Math.min(100, Math.round((value / max) * 100));
+}
+
+function formatScorePoints(value: number) {
+  return value.toFixed(2);
+}
+
+function ScoreBreakdownBar({
+  label,
+  value,
+  max,
+  barClass,
+  badgeClass,
+}: {
+  label: string;
+  value: number;
+  max: number;
+  barClass: string;
+  badgeClass: string;
+}) {
+  const fill = breakdownFillPercent(value, max);
+
+  return (
+    <div className="rounded-xl border border-white/10 bg-[#111827] p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-slate-200">{label}</p>
+          <p className="mt-0.5 text-xs text-slate-500">Max {formatScorePoints(max)}</p>
+        </div>
+        <span
+          className={`shrink-0 rounded-full border px-2.5 py-1 font-mono text-[11px] ${badgeClass}`}
+        >
+          {formatScorePoints(value)} / {formatScorePoints(max)}
+        </span>
+      </div>
+      <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white/10">
+        <div
+          className={`h-full rounded-full transition-all duration-500 ${barClass}`}
+          style={{ width: `${fill}%` }}
+        />
+      </div>
+      <p className="mt-2 text-xs text-slate-500">
+        {fill}% of component weight earned
+      </p>
+    </div>
+  );
+}
+
+function ScoreBreakdownSection({
+  breakdown,
+}: {
+  breakdown: MatchItem["score_breakdown"];
+}) {
+  if (!breakdown) {
+    return (
+      <div className="mb-4 rounded-2xl border border-white/10 bg-[#0f172a] p-4 text-sm">
+        <div className="flex items-center gap-2">
+          <BarChart3 size={16} className="text-slate-500" />
+          <p className="font-semibold text-slate-200">Score Breakdown</p>
+        </div>
+        <p className="mt-3 leading-6 text-slate-400">
+          Detailed scoring breakdown is not available for this match. Regenerate
+          matches to refresh transparent score components.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-4 rounded-2xl border border-white/10 bg-[#0f172a] p-4 text-sm">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <BarChart3 size={16} className="text-slate-400" />
+          <p className="font-semibold text-slate-200">Score Breakdown</p>
+        </div>
+        <span className="inline-flex w-fit rounded-full border border-white/10 bg-[#111827] px-2.5 py-1 font-mono text-[11px] text-slate-300">
+          Final {scorePercent(breakdown.final_score)}%
+        </span>
+      </div>
+      <p className="mt-2 text-xs leading-5 text-slate-500">
+        Match score is the sum of skill overlap (up to 0.7), role overlap (up to
+        0.3), and remote bonus (up to 0.1), capped at 100%.
+      </p>
+
+      <div className="mt-4 grid gap-3">
+        <ScoreBreakdownBar
+          label="Skill Overlap Score"
+          value={breakdown.skill_overlap_score}
+          max={SCORE_BREAKDOWN_MAX.skill}
+          barClass="bg-blue-400"
+          badgeClass="border border-blue-400/20 bg-blue-500/10 text-blue-300"
+        />
+        <ScoreBreakdownBar
+          label="Role Overlap Score"
+          value={breakdown.role_overlap_score}
+          max={SCORE_BREAKDOWN_MAX.role}
+          barClass="bg-violet-400"
+          badgeClass="border border-violet-400/20 bg-violet-500/10 text-violet-300"
+        />
+        <ScoreBreakdownBar
+          label="Remote Bonus"
+          value={breakdown.remote_bonus}
+          max={SCORE_BREAKDOWN_MAX.remote}
+          barClass="bg-cyan-400"
+          badgeClass="border border-cyan-400/20 bg-cyan-500/10 text-cyan-300"
+        />
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2 border-t border-white/10 pt-4">
+        <span className="inline-flex rounded-full border border-blue-400/20 bg-blue-500/10 px-2.5 py-1 font-mono text-[11px] text-blue-300">
+          Skills +{formatScorePoints(breakdown.skill_overlap_score)}
+        </span>
+        <span className="inline-flex rounded-full border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 font-mono text-[11px] text-violet-300">
+          Role +{formatScorePoints(breakdown.role_overlap_score)}
+        </span>
+        <span className="inline-flex rounded-full border border-cyan-400/20 bg-cyan-500/10 px-2.5 py-1 font-mono text-[11px] text-cyan-300">
+          Remote +{formatScorePoints(breakdown.remote_bonus)}
+        </span>
+        <span className="inline-flex rounded-full border border-white/10 bg-[#111827] px-2.5 py-1 font-mono text-[11px] text-slate-300">
+          = {formatScorePoints(breakdown.final_score)} total
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function SkillChip({
   skill,
   matched = false,
@@ -399,45 +533,7 @@ if (loading) {
                   </div>
                 </div>
 
-                {match.score_breakdown && (
-                  <div className="mb-4 rounded-2xl border border-white/10 bg-[#0f172a] p-4 text-sm">
-                    <p className="mb-3 font-semibold">Score breakdown</p>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="rounded-xl border border-white/10 bg-[#111827] p-3">
-                        <p className="text-xs uppercase tracking-wide text-slate-500">
-                          Skill overlap
-                        </p>
-                        <p className="mt-2 font-mono text-lg text-slate-200">
-                          {scorePercent(match.score_breakdown.skill_overlap_score)}%
-                        </p>
-                      </div>
-                      <div className="rounded-xl border border-white/10 bg-[#111827] p-3">
-                        <p className="text-xs uppercase tracking-wide text-slate-500">
-                          Role overlap
-                        </p>
-                        <p className="mt-2 font-mono text-lg text-slate-200">
-                          {scorePercent(match.score_breakdown.role_overlap_score)}%
-                        </p>
-                      </div>
-                      <div className="rounded-xl border border-white/10 bg-[#111827] p-3">
-                        <p className="text-xs uppercase tracking-wide text-slate-500">
-                          Remote bonus
-                        </p>
-                        <p className="mt-2 font-mono text-lg text-slate-200">
-                          {scorePercent(match.score_breakdown.remote_bonus)}%
-                        </p>
-                      </div>
-                      <div className="rounded-xl border border-white/10 bg-[#111827] p-3">
-                        <p className="text-xs uppercase tracking-wide text-slate-500">
-                          Final score
-                        </p>
-                        <p className="mt-2 font-mono text-lg text-slate-200">
-                          {scorePercent(match.score_breakdown.final_score)}%
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                <ScoreBreakdownSection breakdown={match.score_breakdown} />
 
                 <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-4 text-sm">
                   <p className="mb-2 font-semibold">Job description</p>
