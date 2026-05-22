@@ -136,7 +136,7 @@ def search_external_jobs(
     return ExternalJobSearchResult(
         total=len(jobs),
         items=[ExternalJobRead(**job) for job in jobs],
-        keyword=payload.keyword,
+        keyword=payload.keyword or "",
         location=payload.location,
         country=payload.country,
         page=payload.page,

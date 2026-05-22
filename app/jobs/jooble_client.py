@@ -11,6 +11,7 @@ from app.config import settings
 from app.exceptions import AppError
 from app.jobs.base_client import BaseJobProvider
 from app.jobs.schemas import ExternalJobSearchRequest
+from app.jobs.service import resolve_provider_search_keyword
 from app.jobs.skill_extractor import (
     extract_experience_requirement_from_text,
     extract_languages_from_text,
@@ -151,7 +152,10 @@ class JoobleClient(BaseJobProvider):
         url = f"{base_url}/{settings.JOOBLE_API_KEY}"
 
         payload = {
-            "keywords": request.keyword,
+            "keywords": resolve_provider_search_keyword(
+                request.keyword,
+                source="jooble",
+            ),
             "location": _build_location(request.location, request.country),
             "page": request.page,
         }

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class JobPostingCreate(BaseModel):
@@ -72,12 +72,23 @@ class IngestJobsResult(BaseModel):
 
 
 class ExternalJobSearchRequest(BaseModel):
-    keyword: str = Field(..., min_length=1, max_length=100)
+    keyword: str | None = Field(
+        default="",
+        max_length=100,
+        description="Optional search term; empty browses by location/source only.",
+    )
     location: str = Field(default="", max_length=100)
     country: str = Field(default="de", min_length=2, max_length=2)
     max_results: int = Field(default=20, ge=1, le=50)
     page: int = Field(default=1, ge=1, le=20)
     source: Literal["adzuna", "arbeitnow", "jooble"] = "adzuna"
+
+    @field_validator("keyword", mode="before")
+    @classmethod
+    def normalize_keyword(cls, value: str | None) -> str:
+        if value is None:
+            return ""
+        return str(value).strip()
 
 
 class ExternalJobRead(BaseModel):

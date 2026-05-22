@@ -8,6 +8,7 @@ import httpx
 
 from app.jobs.base_client import BaseJobProvider
 from app.jobs.schemas import ExternalJobSearchRequest
+from app.jobs.service import normalize_live_search_keyword
 from app.jobs.skill_extractor import (
     extract_experience_requirement_from_text,
     extract_languages_from_text,
@@ -123,7 +124,7 @@ class ArbeitnowClient(BaseJobProvider):
         data = response.json()
         items = data.get("data", [])
 
-        keyword_lower = (request.keyword or "").strip().lower()
+        keyword_lower = normalize_live_search_keyword(request.keyword).lower()
         location_lower = (request.location or "").strip().lower()
 
         filtered = []

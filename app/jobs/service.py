@@ -1,5 +1,6 @@
 import logging
 import uuid
+from typing import Literal
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
@@ -16,6 +17,35 @@ from app.jobs.skill_extractor import (
 )
 
 logger = logging.getLogger(__name__)
+
+JobSource = Literal["adzuna", "arbeitnow", "jooble"]
+DEFAULT_BROWSE_KEYWORD = "software"
+
+
+def normalize_live_search_keyword(keyword: str | None) -> str:
+    """Trim user input; empty string means browse without a specific role keyword."""
+    if keyword is None:
+        return ""
+    return keyword.strip()
+
+
+def resolve_provider_search_keyword(
+    keyword: str | None,
+    *,
+    source: JobSource,
+) -> str:
+    """
+    Map an optional browse keyword to what each provider accepts.
+
+    Arbeitnow is filtered client-side and can omit keyword matching when empty.
+    Adzuna and Jooble require a non-empty query, so we use a broad fallback term.
+    """
+    cleaned = normalize_live_search_keyword(keyword)
+    if cleaned:
+        return cleaned
+    if source == "arbeitnow":
+        return ""
+    return DEFAULT_BROWSE_KEYWORD
 
 
 def create_job(db: Session, payload: JobPostingCreate) -> JobPosting:
