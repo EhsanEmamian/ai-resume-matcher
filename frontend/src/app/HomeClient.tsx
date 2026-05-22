@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -10,6 +11,18 @@ import HeroSection from "@/components/landing/HeroSection";
 import HowItWorksSection from "@/components/landing/HowItWorksSection";
 import FeatureHighlightsSection from "@/components/landing/FeatureHighlightsSection";
 import TechStackBar from "@/components/landing/TechStackBar";
+
+const tryItEntranceVariants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: [0.22, 1, 0.36, 1] as const,
+    },
+  },
+};
 
 export default function HomeClient() {
   const [file, setFile] = useState<File | null>(null);
@@ -75,7 +88,13 @@ export default function HomeClient() {
           id="try-it"
           className="scroll-mt-24 border-t border-white/10 bg-[#0B1120] px-6 py-20"
         >
-          <div className="mx-auto max-w-4xl">
+          <motion.div
+            className="mx-auto max-w-4xl"
+            variants={tryItEntranceVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-50px" }}
+          >
             <div className="mb-8 text-center">
               <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-blue-300">
                 Try it
@@ -163,7 +182,7 @@ export default function HomeClient() {
                 </div>
               )}
             </div>
-          </div>
+          </motion.div>
         </section>
 
         <HowItWorksSection />
