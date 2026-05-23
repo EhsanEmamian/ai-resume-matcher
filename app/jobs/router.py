@@ -1,11 +1,14 @@
 import uuid
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.exceptions import NotFoundError
 from app.jobs import ingestion, service
+from app.jobs.demo_data import DEMO_JOBS
+from app.jobs.models import JobPosting
 from app.jobs.base_client import get_job_client
 from app.jobs.schemas import (
     BackfillJobSkillsResult,
@@ -20,6 +23,7 @@ from app.jobs.schemas import (
     JobPostingCreate,
     JobPostingList,
     JobPostingRead,
+    SeedDemoResult,
 )
 
 router = APIRouter()
@@ -147,6 +151,43 @@ def search_external_jobs(
         country=payload.country,
         page=payload.page,
         source=payload.source,
+    )
+
+
+@router.post(
+    "/seed-demo",
+    response_model=SeedDemoResult,
+    status_code=status.HTTP_200_OK,
+    summary="Seed database with demo jobs for testing",
+)
+def seed_demo_jobs(db: Session = Depends(get_db)) -> SeedDemoResult:
+    created = 0
+    skipped = 0
+
+    for job_data in DEMO_JOBS:
+        existing = db.scalar(
+            select(JobPosting).where(
+                JobPosting.source == "demo",
+                JobPosting.source_id == job_data["source_id"],
+            )
+        )
+        if existing:
+            skipped += 1
+            continue
+
+        db.add(JobPosting(**job_data))
+        created += 1
+
+    db.commit()
+
+    return SeedDemoResult(
+        created=created,
+        skipped=skipped,
+        message=(
+            f"Loaded {created} demo job{'s' if created != 1 else ''}."
+            if created > 0
+            else "Demo jobs already loaded."
+        ),
     )
 
 

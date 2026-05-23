@@ -15,6 +15,8 @@ import { useEffect, useMemo, useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AlertBanner from "@/components/AlertBanner";
+import JobsEmptyState from "@/components/JobsEmptyState";
+import JobSourceBadge from "@/components/JobSourceBadge";
 import { Skeleton, SkeletonCard } from "@/components/Skeleton";
 import {
   clearJobsBySource,
@@ -295,6 +297,15 @@ export default function JobsClient() {
             )}
           </section>
 
+          {total === 0 ? (
+            <JobsEmptyState
+              onSeeded={() => {
+                setLoading(true);
+                void loadJobs();
+              }}
+            />
+          ) : (
+            <>
           <section className="grid gap-4 rounded-[2rem] border border-white/10 bg-[#111827] p-6 shadow-sm md:grid-cols-3">
             <div>
               <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-200">
@@ -436,9 +447,7 @@ export default function JobsClient() {
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        <div className="rounded-2xl bg-[#3B82F6] px-4 py-2 text-sm font-medium text-white">
-                          {job.source === "adzuna" ? "Adzuna" : "Manual"}
-                        </div>
+                        <JobSourceBadge source={job.source} />
 
                         <button
                           type="button"
@@ -564,6 +573,8 @@ export default function JobsClient() {
                   </button>
                 </div>
               </div>
+            </>
+          )}
             </>
           )}
         </div>

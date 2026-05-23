@@ -6,6 +6,7 @@ import { Building2, MapPin, BriefcaseBusiness } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AlertBanner from "@/components/AlertBanner";
+import JobSourceBadge from "@/components/JobSourceBadge";
 import { Skeleton } from "@/components/Skeleton";
 import { getJob, type JobItem } from "@/lib/api";
 
@@ -129,9 +130,7 @@ export default function JobDetailClient({
                 </div>
               </div>
 
-              <div className="rounded-2xl bg-[#3B82F6] px-4 py-2 text-sm font-medium text-white">
-                {job.source === "adzuna" ? "Adzuna" : "Manual"}
-              </div>
+              <JobSourceBadge source={job.source} />
             </div>
           </section>
 

@@ -173,3 +173,9 @@ class BackfillJobSkillsResult(BaseModel):
 class ClearJobsBySourceResult(BaseModel):
     source: str
     deleted: int
+
+
+class SeedDemoResult(BaseModel):
+    created: int
+    skipped: int
+    message: str
