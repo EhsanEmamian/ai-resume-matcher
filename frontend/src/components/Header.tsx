@@ -26,8 +26,8 @@ export default function Header() {
             <p className="text-sm font-semibold tracking-tight text-white">
               AI Resume Matcher
             </p>
-            <p className="hidden text-xs text-white/45 sm:block">
-              Resume parsing · Live jobs · Explainable matching
+            <p className="hidden text-xs text-white/50 sm:block">
+              Resume parsing · Adzuna · Arbeitnow · Remotive · Jooble
             </p>
           </div>
         </Link>

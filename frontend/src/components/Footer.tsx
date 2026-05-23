@@ -59,9 +59,12 @@ export default function Footer() {
             Builder
           </p>
           <p className="mt-3 text-lg font-semibold">Ehsan Emamian</p>
+          <p className="mt-1 text-sm font-medium text-blue-200/80">
+            Backend Developer
+          </p>
           <p className="mt-2 text-sm leading-6 text-white/70">
-            Junior backend developer focused on AI integration, product-minded
-            engineering, and practical full-stack systems.
+            Product-minded engineer focused on AI integration, API design, and
+            practical systems that ship end to end.
           </p>
         </div>
       </div>
@@ -69,7 +72,10 @@ export default function Footer() {
       <div className="border-t border-white/10">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-6 py-4 text-xs text-white/50 sm:flex-row sm:items-center sm:justify-between">
           <p>Built by Ehsan Emamian</p>
-          <p>FastAPI · PostgreSQL · Next.js · Claude AI · Adzuna · Arbeitnow</p>
+          <p>
+            FastAPI · PostgreSQL · Next.js · Claude AI · Adzuna · Arbeitnow ·
+            Remotive · Jooble
+          </p>
         </div>
       </div>
     </footer>

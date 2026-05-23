@@ -44,14 +44,14 @@ const steps = [
 
 export default function HowItWorksSection() {
   return (
-    <section className="border-t border-white/10 bg-[#0B1120] px-6 py-20">
+    <section className="border-t border-white/[0.08] bg-[#0B1120] px-6 py-24">
       <div className="mx-auto max-w-6xl">
         <div className="max-w-2xl">
           <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-blue-300">
             How it works
           </p>
 
-          <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-100">
+          <h2 className="mt-3 text-3xl font-bold tracking-[-0.02em] text-slate-50">
             From resume to explainable job matches.
           </h2>
 
@@ -72,7 +72,7 @@ export default function HowItWorksSection() {
             <motion.div
               key={step.number}
               variants={staggerItemVariants}
-              className="rounded-[1.75rem] border border-white/10 bg-[#111827] p-6 transition hover:border-blue-400/30"
+              className="rounded-[1.75rem] border border-white/[0.08] bg-[#111827] p-6 shadow-lg shadow-black/10 ring-1 ring-inset ring-white/[0.04] transition hover:border-blue-400/25 hover:shadow-blue-950/15"
             >
               <p className="font-mono text-xs text-blue-300">{step.number}</p>
 

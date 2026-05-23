@@ -10,9 +10,11 @@ import {
   useTransform,
 } from "framer-motion";
 
+const JOB_DATA_SOURCES = ["Adzuna", "Arbeitnow", "Remotive", "Jooble"] as const;
+
 function SkillBadge({ children }: { children: React.ReactNode }) {
   return (
-    <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 font-mono text-[11px] text-slate-300">
+    <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 font-mono text-[11px] text-slate-300 ring-1 ring-inset ring-white/[0.04]">
       {children}
     </span>
   );
@@ -115,7 +117,7 @@ function DashboardMockup() {
     <div className="relative mx-auto w-full max-w-xl">
       <div className="absolute -inset-6 rounded-[2rem] bg-blue-500/10 blur-3xl" />
 
-      <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[#111827] shadow-2xl shadow-black/30">
+      <div className="relative overflow-hidden rounded-[2rem] border border-white/[0.08] bg-[#111827] shadow-2xl shadow-black/40 ring-1 ring-inset ring-white/[0.06]">
         <div className="flex items-center justify-between border-b border-white/10 bg-[#0F172A] px-5 py-4">
           <div className="flex items-center gap-2">
             <span className="h-2.5 w-2.5 rounded-full bg-red-400/80" />
@@ -137,7 +139,7 @@ function DashboardMockup() {
                 Ehsan Emamian
               </p>
               <p className="mt-1 text-sm text-slate-400">
-                Mid-level Backend Engineer
+                Backend Developer
               </p>
 
               <div className="mt-4 flex flex-wrap gap-2">
@@ -229,20 +231,20 @@ export default function HeroSection() {
             </span>
           </div>
 
-          <h1 className="mt-7 max-w-3xl text-4xl font-bold tracking-[-0.04em] text-slate-100 sm:text-5xl lg:text-[4rem] lg:leading-[1.05]">
+          <h1 className="mt-7 max-w-3xl text-balance text-4xl font-bold tracking-[-0.04em] text-slate-50 sm:text-5xl lg:text-[4rem] lg:leading-[1.05]">
             Resume intelligence,
             <br />
             built from scratch.
           </h1>
 
-          <p className="mt-6 max-w-2xl text-base leading-8 text-slate-400 sm:text-lg">
+          <p className="mt-6 max-w-2xl text-base leading-8 text-slate-300/90 sm:text-lg">
             Upload a PDF resume, extract a structured candidate profile with
             Claude AI, and compare it against real job postings using explainable
             score breakdowns.
           </p>
 
-          <p className="mt-5 font-mono text-sm text-slate-500">
-            Built by Ehsan Emamian · Backend Engineer · AI Integration
+          <p className="mt-5 font-mono text-sm text-slate-400">
+            Built by Ehsan Emamian · Backend Developer · AI Integration
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
@@ -261,22 +263,22 @@ export default function HeroSection() {
             </Link>
           </div>
 
-          <div className="mt-8 flex flex-wrap gap-2 font-mono text-[11px] text-slate-500">
-            <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5">
-              FastAPI
-            </span>
-            <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5">
-              PostgreSQL
-            </span>
-            <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5">
-              Claude AI
-            </span>
-            <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5">
-              Adzuna
-            </span>
-            <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5">
-              Arbeitnow
-            </span>
+          <div className="mt-8 space-y-3">
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate-500">
+              Stack & job sources
+            </p>
+            <div className="flex flex-wrap gap-2 font-mono text-[11px] text-slate-400">
+              {["FastAPI", "PostgreSQL", "Claude AI", ...JOB_DATA_SOURCES].map(
+                (item) => (
+                  <span
+                    key={item}
+                    className="rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 ring-1 ring-inset ring-white/[0.04]"
+                  >
+                    {item}
+                  </span>
+                )
+              )}
+            </div>
           </div>
         </div>
 

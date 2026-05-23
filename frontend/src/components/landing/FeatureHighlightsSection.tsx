@@ -38,13 +38,13 @@ const features = [
   {
     eyebrow: "Discovery",
     title: "Live Job Discovery",
-    text: "Search real job postings through Adzuna and Arbeitnow, then save promising roles for deeper enrichment and analysis.",
+    text: "Search live postings from Adzuna, Arbeitnow, Remotive, and Jooble, then save promising roles for enrichment and explainable matching.",
   },
 ];
 
 export default function FeatureHighlightsSection() {
   return (
-    <section className="border-t border-white/10 bg-[#0F172A] px-6 py-20">
+    <section className="border-t border-white/[0.08] bg-[#0F172A] px-6 py-24">
       <div className="mx-auto max-w-6xl">
         <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
           <div className="max-w-2xl">
@@ -52,7 +52,7 @@ export default function FeatureHighlightsSection() {
               Product features
             </p>
 
-            <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-100">
+            <h2 className="mt-3 text-3xl font-bold tracking-[-0.02em] text-slate-50">
               Built around real backend and AI workflows.
             </h2>
           </div>
@@ -74,7 +74,7 @@ export default function FeatureHighlightsSection() {
             <motion.article
               key={feature.title}
               variants={staggerItemVariants}
-              className="rounded-[1.75rem] border border-white/10 bg-[#111827] p-6 transition hover:border-blue-400/30 hover:bg-[#1B2537]"
+              className="rounded-[1.75rem] border border-white/[0.08] bg-[#111827] p-6 shadow-lg shadow-black/10 ring-1 ring-inset ring-white/[0.04] transition hover:border-blue-400/25 hover:bg-[#1B2537] hover:shadow-blue-950/20"
             >
               <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate-500">
                 {feature.eyebrow}

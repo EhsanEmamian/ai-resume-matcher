@@ -86,7 +86,7 @@ export default function HomeClient() {
 
         <section
           id="try-it"
-          className="scroll-mt-24 border-t border-white/10 bg-[#0B1120] px-6 py-20"
+          className="scroll-mt-24 border-t border-white/[0.08] bg-[#0B1120] px-6 py-24"
         >
           <motion.div
             className="mx-auto max-w-4xl"
@@ -100,11 +100,11 @@ export default function HomeClient() {
                 Try it
               </p>
 
-              <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-100">
+              <h2 className="mt-3 text-3xl font-bold tracking-[-0.02em] text-slate-50">
                 Upload and parse a resume.
               </h2>
 
-              <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-400">
+              <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-300/90">
                 Upload a PDF resume and generate a structured candidate profile
                 that can later be matched against saved jobs.
               </p>
@@ -114,7 +114,7 @@ export default function HomeClient() {
               </p>
             </div>
 
-            <div className="rounded-[2rem] border border-white/10 bg-[#111827] p-6 shadow-2xl shadow-black/20 sm:p-8">
+            <div className="rounded-[2rem] border border-white/[0.08] bg-[#111827] p-6 shadow-2xl shadow-black/30 ring-1 ring-inset ring-white/[0.06] sm:p-8">
               <form onSubmit={handleSubmit} className="space-y-5">
                 <label className="block">
                   <span className="mb-2 block text-sm font-medium text-slate-200">
