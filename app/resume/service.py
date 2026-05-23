@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 import shutil
 import uuid
 from datetime import datetime, time, timezone
 from pathlib import Path
 
 from fastapi import UploadFile
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.ai.resume_parser import ResumeParsingError, parse_resume_with_ai
@@ -12,8 +14,7 @@ from app.matching.models import MatchResult
 from app.resume.models import Resume, ResumeProfile
 from app.resume.pdf_extractor import PDFExtractionError, extract_text_from_pdf
 from app.resume.text_utils import normalize_resume_text
-from app.resume.validation import ResumeValidationError, validate_resume_document
-from sqlalchemy import select, func
+from app.resume.validation import validate_resume_document
 
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)

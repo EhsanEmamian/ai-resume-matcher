@@ -1,7 +1,8 @@
 import logging
 import re
 import uuid
-from typing import Literal
+from datetime import datetime
+from typing import Any, Literal
 
 import httpx
 from sqlalchemy import delete, func, select
@@ -39,16 +40,81 @@ def _strip_html(html: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
-def fetch_remotive_jobs(
-    keyword: str,
-    max_results: int = 20,
-) -> list[dict]:
-    """
-    Fetch remote jobs from Remotive.
-    Remotive provides full HTML descriptions natively — no source-page enrichment needed.
-    Returns a list of dicts shaped for ExternalJobRead / ImportExternalJobRequest.
-    """
-    params: dict[str, str | int] = {"limit": max_results}
+# ── Keyword normalisation ──────────────────────────────────────────────────────
+
+def _parse_remotive_posted_at(value: str | None) -> datetime | None:
+    if not value:
+        return None
+
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+
+
+def _normalize_remotive_job(item: dict[str, Any]) -> dict[str, Any]:
+    """Map a Remotive API job to every field required by ExternalJobRead."""
+    title = (item.get("title") or "").strip() or "Untitled Job"
+    company = (item.get("company_name") or "").strip() or "Unknown Company"
+    raw_html = item.get("description") or ""
+    plain_text = _strip_html(raw_html)
+    description = plain_text or raw_html
+
+    tags = [t for t in (item.get("tags") or []) if isinstance(t, str)]
+
+    extracted_skills = extract_skills_from_text(title=title, description=description)
+    extracted_languages = extract_languages_from_text(title=title, description=description)
+    extracted_experience = extract_experience_requirement_from_text(
+        title=title,
+        description=description,
+    )
+    extracted_salary_text = extract_salary_text_from_text(
+        title=title,
+        description=description,
+    )
+
+    remotive_salary = (item.get("salary") or "").strip()
+    salary_text = remotive_salary or extracted_salary_text
+
+    location_raw = item.get("candidate_required_location") or item.get("location")
+    location = (location_raw or "").strip() or None
+
+    job_id = item.get("id")
+    source_url = (item.get("url") or "").strip() or None
+
+    required_skills = list(dict.fromkeys([*tags, *extracted_skills]))
+
+    return {
+        "title": title,
+        "company": company,
+        "description": description,
+        "required_skills": required_skills,
+        "required_languages": extracted_languages,
+        "experience_requirement": extracted_experience,
+        "salary_text": salary_text,
+        "source_text": plain_text or None,
+        "enrichment_status": "success" if description else "not_attempted",
+        "enrichment_error": None,
+        "enrichment_failure_reason": None,
+        "enrichment_raw_html_length": len(raw_html) if raw_html else None,
+        "enrichment_text_word_count": len(plain_text.split()) if plain_text else None,
+        "enrichment_text_preview": plain_text[:300] if plain_text else None,
+        "location": location,
+        "remote": True,
+        "source": "remotive",
+        "source_id": str(job_id) if job_id is not None else None,
+        "source_url": source_url,
+        "salary_min": None,
+        "salary_max": None,
+        "contract_type": (item.get("job_type") or "").strip() or None,
+        "category": (item.get("category") or "").strip() or None,
+        "posted_at": _parse_remotive_posted_at(item.get("publication_date")),
+    }
+
+
+def fetch_remotive_jobs(keyword: str, limit: int = 20) -> list[dict]:
+    """Fetch jobs from Remotive API and map them to ExternalJobRead."""
+    params: dict[str, str | int] = {"limit": limit}
     if keyword:
         params["search"] = keyword
 
@@ -67,60 +133,16 @@ def fetch_remotive_jobs(
     except httpx.RequestError as exc:
         logger.error("Remotive API request failed: %s", exc)
         return []
+    except Exception as exc:
+        logger.error("Failed to fetch from Remotive: %s", exc)
+        return []
 
-    raw_jobs: list[dict] = data.get("jobs", [])
-    results: list[dict] = []
+    jobs = []
+    for item in data.get("jobs", [])[:limit]:
+        if isinstance(item, dict):
+            jobs.append(_normalize_remotive_job(item))
+    return jobs
 
-    for job in raw_jobs[:max_results]:
-        raw_html: str = job.get("description", "") or ""
-        plain_text: str = _strip_html(raw_html)
-
-        # Tags from Remotive map directly to required skills
-        tags: list[str] = [
-            t for t in (job.get("tags") or []) if isinstance(t, str)
-        ]
-
-        salary_raw: str | None = job.get("salary") or None
-
-        location: str = (
-            job.get("candidate_required_location")
-            or job.get("location")
-            or "Remote"
-        )
-
-        results.append({
-            "title": job.get("title", ""),
-            "company": job.get("company_name", ""),
-            # Use plain text for description; keep original HTML in source_text
-            "description": plain_text or raw_html,
-            "source_text": plain_text,
-            "required_skills": tags,
-            "required_languages": [],
-            "experience_requirement": None,
-            "salary_text": salary_raw,
-            "location": location,
-            "remote": True,          # Remotive is exclusively remote
-            "source": "remotive",
-            "source_id": str(job.get("id", "")),
-            "source_url": job.get("url"),
-            "salary_min": None,
-            "salary_max": None,
-            "contract_type": job.get("job_type"),
-            "category": job.get("category"),
-            "posted_at": job.get("publication_date"),
-            # Full description is natively available — mark enrichment as done
-            "enrichment_status": "success",
-            "enrichment_error": None,
-            "enrichment_failure_reason": None,
-            "enrichment_raw_html_length": len(raw_html),
-            "enrichment_text_word_count": len(plain_text.split()),
-            "enrichment_text_preview": plain_text[:200] if plain_text else None,
-        })
-
-    return results
-
-
-# ── Keyword normalisation ──────────────────────────────────────────────────────
 
 def normalize_live_search_keyword(keyword: str | None) -> str:
     if keyword is None:
@@ -251,11 +273,7 @@ def _enrich_job_background(db: Session, job_id: uuid.UUID, payload: dict) -> Non
 
     if source_url:
         enrichment_result = fetch_source_text_result(source_url)
-
         if enrichment_result.failure_reason == "redirect_interstitial":
-            # Graceful degradation: redirect/interstitial pages (common with Adzuna)
-            # cannot be scraped. Instead of marking as failed, fall back to the
-            # original preview description so extraction can still run.
             source_text = description
             enrichment_status = "success"
             enrichment_error = None
