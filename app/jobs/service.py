@@ -1,6 +1,9 @@
 import logging
 import uuid
-from typing import Literal
+from datetime import datetime
+from typing import Any, Literal
+
+import httpx
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
@@ -18,8 +21,94 @@ from app.jobs.skill_extractor import (
 
 logger = logging.getLogger(__name__)
 
-JobSource = Literal["adzuna", "arbeitnow", "jooble"]
+JobSource = Literal["adzuna", "arbeitnow", "jooble", "remotive"]
 DEFAULT_BROWSE_KEYWORD = "software"
+
+
+def _parse_remotive_posted_at(value: str | None) -> datetime | None:
+    if not value:
+        return None
+
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+
+
+def _normalize_remotive_job(item: dict[str, Any]) -> dict[str, Any]:
+    """Map a Remotive API job to every field required by ExternalJobRead."""
+    title = (item.get("title") or "").strip() or "Untitled Job"
+    company = (item.get("company_name") or "").strip() or "Unknown Company"
+    description = item.get("description") or ""
+
+    extracted_skills = extract_skills_from_text(title=title, description=description)
+    extracted_languages = extract_languages_from_text(title=title, description=description)
+    extracted_experience = extract_experience_requirement_from_text(
+        title=title,
+        description=description,
+    )
+    extracted_salary_text = extract_salary_text_from_text(
+        title=title,
+        description=description,
+    )
+
+    remotive_salary = (item.get("salary") or "").strip()
+    salary_text = remotive_salary or extracted_salary_text
+
+    location_raw = item.get("candidate_required_location")
+    location = (location_raw or "").strip() or None
+
+    job_id = item.get("id")
+    source_url = (item.get("url") or "").strip() or None
+
+    return {
+        "title": title,
+        "company": company,
+        "description": description,
+        "required_skills": extracted_skills,
+        "required_languages": extracted_languages,
+        "experience_requirement": extracted_experience,
+        "salary_text": salary_text,
+        "source_text": description or None,
+        "enrichment_status": "success" if description else "not_attempted",
+        "enrichment_error": None,
+        "enrichment_failure_reason": None,
+        "enrichment_raw_html_length": len(description) if description else None,
+        "enrichment_text_word_count": len(description.split()) if description else None,
+        "enrichment_text_preview": description[:300] if description else None,
+        "location": location,
+        "remote": True,
+        "source": "remotive",
+        "source_id": str(job_id) if job_id is not None else None,
+        "source_url": source_url,
+        "salary_min": None,
+        "salary_max": None,
+        "contract_type": (item.get("job_type") or "").strip() or None,
+        "category": (item.get("category") or "").strip() or None,
+        "posted_at": _parse_remotive_posted_at(item.get("publication_date")),
+    }
+
+
+def fetch_remotive_jobs(keyword: str, limit: int = 20) -> list[dict]:
+    """Fetch jobs from Remotive API and map them to ExternalJobRead."""
+    url = "https://remotive.com/api/remote-jobs"
+    params = {"limit": limit}
+    if keyword:
+        params["search"] = keyword
+
+    try:
+        response = httpx.get(url, params=params, timeout=10.0)
+        response.raise_for_status()
+        data = response.json()
+
+        jobs = []
+        for item in data.get("jobs", [])[:limit]:
+            if isinstance(item, dict):
+                jobs.append(_normalize_remotive_job(item))
+        return jobs
+    except Exception as e:
+        logger.error("Failed to fetch from Remotive: %s", e)
+        return []
 
 
 def normalize_live_search_keyword(keyword: str | None) -> str:
@@ -146,10 +235,16 @@ def _enrich_job_background(db: Session, job_id: uuid.UUID, payload: dict) -> Non
 
     if source_url:
         enrichment_result = fetch_source_text_result(source_url)
-        source_text = enrichment_result.text
-        enrichment_status = enrichment_result.status
-        enrichment_error = enrichment_result.error
-        enrichment_failure_reason = enrichment_result.failure_reason
+        if enrichment_result.failure_reason == "redirect_interstitial":
+            source_text = description
+            enrichment_status = "success"
+            enrichment_error = None
+            enrichment_failure_reason = "redirect_fallback"
+        else:
+            source_text = enrichment_result.text
+            enrichment_status = enrichment_result.status
+            enrichment_error = enrichment_result.error
+            enrichment_failure_reason = enrichment_result.failure_reason
     else:
         enrichment_failure_reason = "no_url"
 

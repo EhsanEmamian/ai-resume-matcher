@@ -81,7 +81,7 @@ class ExternalJobSearchRequest(BaseModel):
     country: str = Field(default="de", min_length=2, max_length=2)
     max_results: int = Field(default=20, ge=1, le=50)
     page: int = Field(default=1, ge=1, le=20)
-    source: Literal["adzuna", "arbeitnow", "jooble"] = "adzuna"
+    source: Literal["adzuna", "arbeitnow", "jooble", "remotive"] = "adzuna"
 
     @field_validator("keyword", mode="before")
     @classmethod
@@ -125,7 +125,7 @@ class ExternalJobSearchResult(BaseModel):
     location: str
     country: str
     page: int
-    source: Literal["adzuna", "arbeitnow", "jooble"]
+    source: Literal["adzuna", "arbeitnow", "jooble", "remotive"]
 
 
 class ImportExternalJobRequest(BaseModel):

@@ -130,8 +130,13 @@ def ingest_jobs(
 def search_external_jobs(
     payload: ExternalJobSearchRequest,
 ) -> ExternalJobSearchResult:
-    client = get_job_client(payload.source)
-    jobs = client.search(payload)
+    
+    # Bypass the client factory for Remotive
+    if payload.source == "remotive":
+        jobs = service.fetch_remotive_jobs(keyword=payload.keyword or "", limit=20)
+    else:
+        client = get_job_client(payload.source)
+        jobs = client.search(payload)
 
     return ExternalJobSearchResult(
         total=len(jobs),
