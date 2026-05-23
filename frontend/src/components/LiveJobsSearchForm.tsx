@@ -26,6 +26,33 @@ type LiveJobsSearchFormProps = {
   onSubmit: (e: React.FormEvent) => void;
 };
 
+const SOURCE_OPTIONS: {
+  value: JobSource;
+  label: string;
+  hint: string;
+}[] = [
+  {
+    value: "adzuna",
+    label: "Adzuna",
+    hint: "Broad coverage across all job types and regions.",
+  },
+  {
+    value: "arbeitnow",
+    label: "Arbeitnow",
+    hint: "Richer tech job descriptions, strong for Europe.",
+  },
+  {
+    value: "remotive",
+    label: "Remotive",
+    hint: "Great for tech and remote roles — full descriptions natively, no enrichment needed.",
+  },
+  {
+    value: "jooble",
+    label: "Jooble",
+    hint: "Extra aggregator coverage for broader regional reach.",
+  },
+];
+
 export default function LiveJobsSearchForm({
   keyword,
   onKeywordChange,
@@ -43,9 +70,13 @@ export default function LiveJobsSearchForm({
   error,
   onSubmit,
 }: LiveJobsSearchFormProps) {
+  const activeSourceHint =
+    SOURCE_OPTIONS.find((s) => s.value === source)?.hint ?? "";
+
   return (
     <section className="rounded-[2rem] border border-white/10 bg-[#111827] p-6 shadow-2xl shadow-black/20">
       <form onSubmit={onSubmit} className="grid gap-4 md:grid-cols-2">
+        {/* Keyword */}
         <div className="relative md:col-span-2">
           <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-200">
             <Search size={16} />
@@ -80,6 +111,7 @@ export default function LiveJobsSearchForm({
           </p>
         </div>
 
+        {/* City */}
         <div>
           <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-200">
             <MapPin size={16} />
@@ -104,6 +136,7 @@ export default function LiveJobsSearchForm({
           </p>
         </div>
 
+        {/* Country */}
         <div>
           <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-200">
             <Globe size={16} />
@@ -123,6 +156,7 @@ export default function LiveJobsSearchForm({
           </select>
         </div>
 
+        {/* Job source */}
         <div className="md:col-span-2">
           <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-200">
             Job source
@@ -133,17 +167,18 @@ export default function LiveJobsSearchForm({
             onChange={(e) => onSourceChange(e.target.value as JobSource)}
             className={fieldClassName}
           >
-            <option value="adzuna">Adzuna</option>
-            <option value="arbeitnow">Arbeitnow</option>
-            <option value="jooble">Jooble</option>
+            {SOURCE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
           </select>
 
-          <p className="mt-1 text-xs text-slate-500">
-            Adzuna gives broad coverage. Arbeitnow gives richer tech
-            descriptions. Jooble adds extra aggregator coverage.
-          </p>
+          {/* Dynamic hint updates based on selected source */}
+          <p className="mt-1 text-xs text-slate-500">{activeSourceHint}</p>
         </div>
 
+        {/* Submit */}
         <div className="md:col-span-2">
           <button
             type="submit"
@@ -155,6 +190,7 @@ export default function LiveJobsSearchForm({
         </div>
       </form>
 
+      {/* Tips */}
       <div className="mt-4 rounded-2xl border border-white/10 bg-[#0F172A] p-4 text-sm text-slate-300">
         Good starting examples:
         <span className="font-medium"> software engineer</span>,
@@ -163,6 +199,7 @@ export default function LiveJobsSearchForm({
         returns 0 results, remove the location first.
       </div>
 
+      {/* Profile hints */}
       {profileHints.length > 0 && (
         <div className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-4 text-sm text-emerald-200">
           <p className="mb-3 font-semibold">Profile hints from resume</p>
@@ -180,6 +217,7 @@ export default function LiveJobsSearchForm({
         </div>
       )}
 
+      {/* Error */}
       {error && (
         <div className="mt-4">
           <AlertBanner variant="error">{error}</AlertBanner>

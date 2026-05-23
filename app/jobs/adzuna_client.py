@@ -7,6 +7,7 @@ from app.config import settings
 from app.exceptions import AppError
 from app.jobs.base_client import BaseJobProvider
 from app.jobs.schemas import ExternalJobSearchRequest
+from app.jobs.service import resolve_provider_search_keyword
 from app.jobs.skill_extractor import (
     extract_experience_requirement_from_text,
     extract_languages_from_text,
@@ -102,7 +103,10 @@ class AdzunaClient(BaseJobProvider):
             "app_id": settings.ADZUNA_APP_ID,
             "app_key": settings.ADZUNA_APP_KEY,
             "results_per_page": request.max_results,
-            "what": request.keyword,
+            "what": resolve_provider_search_keyword(
+                request.keyword,
+                source="adzuna",
+            ),
         }
 
         if request.location.strip():

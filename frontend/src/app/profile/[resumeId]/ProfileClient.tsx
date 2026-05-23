@@ -16,6 +16,8 @@ import {
   type ResumeFullResponse,
 } from "@/lib/api";
 import { deriveSearchSuggestions } from "@/lib/profileSearchSuggestions";
+import { useCountUp } from "@/lib/useCountUp";
+import SkillsConstellation from "@/components/SkillsConstellation";
 
 function InfoBlock({
   title,
@@ -243,18 +245,19 @@ export default function ProfileClient({
             </div>
           </section>
 
-          <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#111827] shadow-sm">
-            <div className="grid lg:grid-cols-[1fr_0.9fr]">
-              <div className="p-8">
-                <h2 className="text-2xl font-semibold tracking-tight">
-                  Parsed profile overview
-                </h2>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
-                  Structured fields extracted from the uploaded resume, ready to
-                  be used for job matching and profile review.
-                </p>
+          <section className="rounded-[2rem] border border-white/10 bg-[#111827] p-8 shadow-sm">
+            <h2 className="text-2xl font-semibold tracking-tight">
+              Parsed profile overview
+            </h2>
+            <p className="mt-3 mb-8 max-w-2xl text-sm leading-6 text-slate-400">
+              Structured fields extracted from the uploaded resume, ready to
+              be used for job matching and profile review.
+            </p>
 
-                <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+              {/* ستون سمت چپ: تمام کارت‌های Skills, Technologies و غیره که داری */}
+              <div className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <InfoBlock
                     title="Skills"
                     value={data.profile?.skills?.join(", ") || "-"}
@@ -277,7 +280,7 @@ export default function ProfileClient({
                   />
                 </div>
 
-                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-4">
                     <p className="mb-1 text-sm font-semibold text-slate-200">
                       Seniority
@@ -298,12 +301,20 @@ export default function ProfileClient({
                 </div>
               </div>
 
-              <div className="relative min-h-[320px] border-t border-white/10 bg-[#0f172a] lg:border-l lg:border-t-0">
-                <Image
-                  src="/images/profile-analysis-visual.png"
-                  alt="Profile analysis illustration"
-                  fill
-                  className="object-cover"
+              {/* ستون سمت راست: کامپوننت کهکشانی جدید ما */}
+              <div className="bg-[#111827] border border-[#1E2D45] rounded-xl overflow-hidden h-fit sticky top-6 min-h-[400px]">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-[#1E2D45]">
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-slate-500">
+                    Skills constellation
+                  </span>
+                  <span className="flex items-center gap-1.5 font-mono text-[10px] text-emerald-400">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    AI-extracted
+                  </span>
+                </div>
+                <SkillsConstellation
+                  skills={data.profile?.skills || []}
+                  technologies={data.profile?.technologies || []}
                 />
               </div>
             </div>
