@@ -81,6 +81,11 @@ class ResumeFullResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class DiscoveryStatusResponse(BaseModel):
+    status: str
+    match_count: int
+
+
 class ResumeValidationRejectedResponse(BaseModel):
     resume_id: uuid.UUID
     filename: str

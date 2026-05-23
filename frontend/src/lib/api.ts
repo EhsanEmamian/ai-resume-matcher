@@ -97,6 +97,11 @@ export type ResumeFullResponse = {
   matches: MatchItem[];
 };
 
+export type DiscoveryStatusResponse = {
+  status: string;
+  match_count: number;
+};
+
 export type IngestJobsRequest = {
   keyword: string;
   location: string;
@@ -258,6 +263,15 @@ export async function getResumeFull(
 ): Promise<ResumeFullResponse> {
   const response = await fetch(`${API_BASE_URL}/resumes/${resumeId}/full`);
   return handleResponse<ResumeFullResponse>(response);
+}
+
+export async function getDiscoveryStatus(
+  resumeId: string
+): Promise<DiscoveryStatusResponse> {
+  const response = await fetch(
+    `${API_BASE_URL}/resumes/${resumeId}/discovery-status`
+  );
+  return handleResponse<DiscoveryStatusResponse>(response);
 }
 
 export async function generateMatches(resumeId: string): Promise<void> {

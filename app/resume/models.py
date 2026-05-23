@@ -31,6 +31,18 @@ class Resume(Base):
     rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     client_ip: Mapped[str | None] = mapped_column(String(64), nullable=True)
     file_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    discovery_status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="pending",
+        server_default="pending",
+    )
+    discovery_job_count: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default="0",
+    )
 
     profile: Mapped["ResumeProfile | None"] = relationship(
         back_populates="resume",

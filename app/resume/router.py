@@ -1,6 +1,15 @@
 import uuid
 
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    HTTPException,
+    Request,
+    UploadFile,
+    status,
+)
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
@@ -9,6 +18,7 @@ from app.core.limiter import limiter
 from app.database import get_db
 from app.exceptions import AIParsingError, InvalidFileError, NotFoundError
 from app.resume import service
+from app.resume.discovery import run_auto_discovery
 from app.resume.file_utils import (
     PdfValidationError,
     assert_file_size_and_page_count,
@@ -17,6 +27,7 @@ from app.resume.file_utils import (
 )
 from app.resume.pdf_extractor import PDFExtractionError
 from app.resume.schemas import (
+    DiscoveryStatusResponse,
     ResumeFullResponse,
     ResumeParseResponse,
     ResumeProfileRead,
@@ -82,6 +93,7 @@ def upload_resume(
 @limiter.limit("3/day")
 async def upload_and_parse_resume(
     request: Request,
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
 ) -> ResumeUploadAndParseResponse | JSONResponse:
@@ -103,6 +115,7 @@ async def upload_and_parse_resume(
         cached_result = service.find_validated_resume_by_hash(db, file_hash)
         if cached_result is not None:
             resume, profile = cached_result
+            background_tasks.add_task(run_auto_discovery, resume.id, profile)
             response = _build_upload_and_parse_response(
                 resume,
                 profile,
@@ -122,6 +135,7 @@ async def upload_and_parse_resume(
             client_ip=client_ip,
             file_hash=file_hash,
         )
+        background_tasks.add_task(run_auto_discovery, resume.id, profile)
         return _build_upload_and_parse_response(resume, profile, cached=False)
 
     except PdfValidationError as exc:
@@ -147,6 +161,25 @@ async def upload_and_parse_resume(
         ) from exc
     except Exception as exc:
         raise AIParsingError(str(exc)) from exc
+
+
+@router.get(
+    "/{resume_id}/discovery-status",
+    response_model=DiscoveryStatusResponse,
+    summary="Poll auto-discovery and matching progress",
+)
+def get_discovery_status(
+    resume_id: uuid.UUID,
+    db: Session = Depends(get_db),
+) -> DiscoveryStatusResponse:
+    resume = service.get_resume(db, resume_id)
+    if resume is None:
+        raise NotFoundError("Resume", str(resume_id))
+
+    return DiscoveryStatusResponse(
+        status=resume.discovery_status,
+        match_count=resume.discovery_job_count,
+    )
 
 
 @router.get(

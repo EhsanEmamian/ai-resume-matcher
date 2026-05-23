@@ -1,9 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { BarChart3, FileText, Languages, Sparkles, Wrench } from "lucide-react";
 import { use, useEffect, useMemo, useRef, useState } from "react";
+import { useDiscoveryStatus } from "@/hooks/useDiscoveryStatus";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AlertBanner from "@/components/AlertBanner";
@@ -36,6 +37,93 @@ function InfoBlock({
       </div>
       <p className="text-sm leading-6 text-slate-300">{value || "-"}</p>
     </div>
+  );
+}
+
+function JobDiscoveryStatus({ resumeId }: { resumeId: string }) {
+  const router = useRouter();
+  const { status, matchCount } = useDiscoveryStatus(resumeId);
+
+  useEffect(() => {
+    if (status !== "ready") {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      router.push(`/matches/${resumeId}`);
+    }, 1200);
+
+    return () => clearTimeout(timeoutId);
+  }, [status, resumeId, router]);
+
+  const isProcessing =
+    status === "processing" || status === "pending";
+
+  return (
+    <section
+      className="rounded-[2rem] border border-white/10 bg-[#111827] p-6 shadow-sm"
+      aria-live="polite"
+    >
+      {isProcessing && (
+        <div className="flex items-start gap-4">
+          <span
+            className="mt-1 h-3 w-3 shrink-0 rounded-full bg-blue-500 animate-pulse"
+            aria-hidden
+          />
+          <div>
+            <h2 className="text-lg font-semibold text-blue-300">
+              Finding jobs for your profile…
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              We are searching live job boards and preparing match scores in the
+              background. This usually takes a few seconds.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {status === "ready" && (
+        <div className="flex items-start gap-4">
+          <span
+            className="mt-1 h-3 w-3 shrink-0 rounded-full bg-emerald-500"
+            aria-hidden
+          />
+          <div>
+            <h2 className="text-lg font-semibold text-emerald-400">
+              Matches ready
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-emerald-200/80">
+              Discovered {matchCount} job{matchCount === 1 ? "" : "s"} and
+              generated your match scores. Redirecting to your results…
+            </p>
+          </div>
+        </div>
+      )}
+
+      {status === "failed" && (
+        <div className="flex items-start gap-4">
+          <span
+            className="mt-1 h-3 w-3 shrink-0 rounded-full bg-slate-500"
+            aria-hidden
+          />
+          <div>
+            <h2 className="text-lg font-semibold text-slate-300">
+              Auto-discovery could not finish
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              We could not fetch live jobs automatically. You can still search
+              manually and import roles to match against your profile.
+            </p>
+            <Link
+              href="/live-jobs"
+              className="mt-4 inline-flex rounded-2xl border border-white/10 bg-[#0f172a] px-4 py-2 text-sm font-medium text-slate-200 hover:bg-white/5"
+            >
+              Search jobs manually
+            </Link>
+          </div>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -174,6 +262,8 @@ export default function ProfileClient({
 
       <main className="min-h-screen bg-[#0B1120] px-6 py-12 text-slate-100">
         <div className="mx-auto max-w-5xl space-y-8">
+          <JobDiscoveryStatus resumeId={resumeId} />
+
           <section className="rounded-[2rem] border border-white/10 bg-[#111827] p-8 shadow-sm">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
