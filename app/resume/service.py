@@ -64,6 +64,35 @@ def save_resume_file(upload_file: UploadFile) -> tuple[str, str]:
     return str(destination), unique_filename
 
 
+def save_resume_bytes(file_bytes: bytes, original_filename: str) -> tuple[str, str]:
+    unique_filename = _build_unique_filename(original_filename)
+    destination = UPLOAD_DIR / unique_filename
+
+    try:
+        destination.write_bytes(file_bytes)
+    except Exception as exc:
+        raise ResumeUploadError(f"Failed to save uploaded file: {exc}") from exc
+
+    return str(destination), unique_filename
+
+
+def find_validated_resume_by_hash(
+    db: Session,
+    file_hash: str,
+) -> tuple[Resume, ResumeProfile] | None:
+    resume = db.scalar(
+        select(Resume)
+        .options(selectinload(Resume.profile))
+        .where(
+            Resume.file_hash == file_hash,
+            Resume.is_resume.is_(True),
+        )
+    )
+    if resume is None or resume.profile is None:
+        return None
+    return resume, resume.profile
+
+
 def _count_today_uploads_for_ip(db: Session, client_ip: str) -> int:
     start_of_day = datetime.combine(
         datetime.now(timezone.utc).date(),
@@ -78,6 +107,52 @@ def _count_today_uploads_for_ip(db: Session, client_ip: str) -> int:
     )
 
     return db.scalar(stmt) or 0
+
+
+def create_resume_from_bytes(
+    db: Session,
+    file_bytes: bytes,
+    *,
+    filename: str,
+    content_type: str,
+    client_ip: str | None,
+    file_hash: str,
+) -> Resume:
+    file_path = None
+
+    try:
+        file_path, _stored_name = save_resume_bytes(file_bytes, filename)
+        raw_text = normalize_resume_text(extract_text_from_pdf(file_path))
+
+        resume = Resume(
+            filename=filename,
+            content_type=content_type,
+            file_path=file_path,
+            raw_text=raw_text,
+            client_ip=client_ip,
+            file_hash=file_hash,
+        )
+
+        db.add(resume)
+        db.commit()
+        db.refresh(resume)
+        return resume
+
+    except (ResumeUploadError, PDFExtractionError):
+        db.rollback()
+        if file_path:
+            path = Path(file_path)
+            if path.exists():
+                path.unlink()
+        raise
+
+    except Exception as exc:
+        db.rollback()
+        if file_path:
+            path = Path(file_path)
+            if path.exists():
+                path.unlink()
+        raise ResumeUploadError(f"Unexpected error while creating resume: {exc}") from exc
 
 
 def create_resume(
@@ -203,6 +278,28 @@ def parse_resume_profile(db: Session, resume_id: uuid.UUID) -> ResumeProfile:
     db.commit()
     db.refresh(profile)
     return profile
+
+
+def upload_and_parse(
+    db: Session,
+    file_bytes: bytes,
+    *,
+    filename: str,
+    content_type: str,
+    client_ip: str | None,
+    file_hash: str,
+) -> tuple[Resume, ResumeProfile]:
+    """Layer 3: Persist resume bytes, validate document, and run AI parsing."""
+    resume = create_resume_from_bytes(
+        db,
+        file_bytes,
+        filename=filename,
+        content_type=content_type,
+        client_ip=client_ip,
+        file_hash=file_hash,
+    )
+    profile = parse_resume_profile(db, resume.id)
+    return resume, profile
 
 
 def create_and_parse_resume(

@@ -59,6 +59,7 @@ class ResumeUploadAndParseResponse(BaseModel):
     content_type: str
     uploaded_at: datetime
     profile: ResumeProfileRead
+    cached: bool = False
 
     model_config = {"from_attributes": True}
 

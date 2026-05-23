@@ -30,6 +30,7 @@ class Resume(Base):
     validation_confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
     rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     client_ip: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    file_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
 
     profile: Mapped["ResumeProfile | None"] = relationship(
         back_populates="resume",

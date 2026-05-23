@@ -1,8 +1,11 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from app.config import settings
+from app.core.limiter import limiter
 from app.exceptions import AppError
 from app.jobs.router import router as jobs_router
 from app.matching.router import router as matching_router
@@ -17,6 +20,8 @@ def create_app() -> FastAPI:
         redoc_url="/redoc",
     )
 
+    app.state.limiter = limiter
+    app.add_middleware(SlowAPIMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
@@ -24,6 +29,23 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    @app.exception_handler(RateLimitExceeded)
+    async def rate_limit_exceeded_handler(
+        request: Request,
+        exc: RateLimitExceeded,
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=429,
+            content={
+                "error": "RateLimitExceeded",
+                "detail": (
+                    "Upload limit exceeded. You may parse up to 3 resumes per day."
+                ),
+            },
+        )
+
+    app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
     @app.exception_handler(AppError)
     async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:

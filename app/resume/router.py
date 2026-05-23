@@ -1,22 +1,47 @@
 import uuid
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.ai.resume_parser import ResumeAIUnavailableError
+from app.core.limiter import limiter
 from app.database import get_db
 from app.exceptions import AIParsingError, InvalidFileError, NotFoundError
 from app.resume import service
+from app.resume.file_utils import (
+    PdfValidationError,
+    assert_file_size_and_page_count,
+    assert_pdf_upload,
+    compute_sha256,
+)
 from app.resume.pdf_extractor import PDFExtractionError
 from app.resume.schemas import (
     ResumeFullResponse,
     ResumeParseResponse,
+    ResumeProfileRead,
     ResumeRead,
     ResumeUploadAndParseResponse,
     ResumeUploadResponse,
 )
 
 router = APIRouter()
+
+
+def _build_upload_and_parse_response(
+    resume,
+    profile,
+    *,
+    cached: bool,
+) -> ResumeUploadAndParseResponse:
+    return ResumeUploadAndParseResponse(
+        resume_id=resume.id,
+        filename=resume.filename,
+        content_type=resume.content_type,
+        uploaded_at=resume.uploaded_at,
+        profile=ResumeProfileRead.model_validate(profile),
+        cached=cached,
+    )
 
 
 @router.post(
@@ -54,31 +79,55 @@ def upload_resume(
     status_code=status.HTTP_201_CREATED,
     summary="Upload a PDF resume and parse it immediately",
 )
-def upload_and_parse_resume(
+@limiter.limit("3/day")
+async def upload_and_parse_resume(
     request: Request,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-) -> ResumeUploadAndParseResponse:
+) -> ResumeUploadAndParseResponse | JSONResponse:
+    client_ip = request.client.host if request.client else None
+    filename = file.filename or "resume.pdf"
+    content_type = file.content_type or "application/pdf"
+
     try:
-        resume, profile = service.create_and_parse_resume(
+        file_bytes = await file.read()
+
+        # Layer 0 — PDF type gate (MIME + extension)
+        assert_pdf_upload(filename, content_type)
+
+        # Layer 1 — Size and page count
+        assert_file_size_and_page_count(file_bytes)
+
+        # Layer 2 — SHA-256 deduplication cache
+        file_hash = compute_sha256(file_bytes)
+        cached_result = service.find_validated_resume_by_hash(db, file_hash)
+        if cached_result is not None:
+            resume, profile = cached_result
+            response = _build_upload_and_parse_response(
+                resume,
+                profile,
+                cached=True,
+            )
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content=response.model_dump(mode="json"),
+            )
+
+        # Layer 3 — Persist + validate + Claude parse (rate limit enforced above)
+        resume, profile = service.upload_and_parse(
             db,
-            file,
-            client_ip=request.client.host if request.client else None,
+            file_bytes,
+            filename=filename,
+            content_type=content_type,
+            client_ip=client_ip,
+            file_hash=file_hash,
         )
-        return ResumeUploadAndParseResponse(
-            resume_id=resume.id,
-            filename=resume.filename,
-            content_type=resume.content_type,
-            uploaded_at=resume.uploaded_at,
-            profile=profile,
-        )
+        return _build_upload_and_parse_response(resume, profile, cached=False)
+
+    except PdfValidationError as exc:
+        raise InvalidFileError(str(exc)) from exc
     except service.ResumeUploadError as exc:
         raise InvalidFileError(str(exc)) from exc
-    except service.ResumeUploadLimitExceededError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=str(exc),
-        ) from exc
     except PDFExtractionError as exc:
         raise InvalidFileError(str(exc)) from exc
     except service.ResumeDocumentRejectedError as exc:

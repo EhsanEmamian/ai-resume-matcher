@@ -58,6 +58,10 @@ def test_generate_matches_for_resume(client: TestClient) -> None:
     assert "job" in first_match
     assert "title" in first_match["job"]
     assert "company" in first_match["job"]
+    breakdown = first_match.get("score_breakdown") or {}
+    assert "skill_overlap" in breakdown
+    assert "final_score" in breakdown
+    assert "narrative" in breakdown
 
 
 def test_list_matches_with_min_score_filter(client: TestClient) -> None:

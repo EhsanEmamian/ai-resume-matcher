@@ -21,6 +21,7 @@ export type ResumeUploadAndParseResponse = {
   content_type: string;
   uploaded_at: string;
   profile: ResumeProfile;
+  cached?: boolean;
 };
 
 export type ManualProfileRole =
@@ -43,16 +44,33 @@ export type MatchListResponse = {
   items: MatchItem[];
 };
 
+export type ScoreBreakdown = {
+  skill_overlap: number;
+  role_alignment: number;
+  seniority_fit: number;
+  language_fit: number;
+  experience_fit: number;
+  final_score: number;
+  weights: {
+    skill_overlap: number;
+    role_alignment: number;
+    seniority_fit: number;
+    language_fit: number;
+    experience_fit: number;
+  };
+  matched_skills: string[];
+  missing_skills: string[];
+  seniority_signal: string | null;
+  language_signal: string | null;
+  data_quality: "full" | "minimal";
+  narrative: string;
+};
+
 export type MatchItem = {
   id: string;
   score: number;
   reason: string;
-  score_breakdown: {
-    skill_overlap_score: number;
-    role_overlap_score: number;
-    remote_bonus: number;
-    final_score: number;
-  } | null;
+  score_breakdown: ScoreBreakdown | null;
   matched_skills: string[] | null;
   job: {
     id: string;
