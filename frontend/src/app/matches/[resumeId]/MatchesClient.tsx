@@ -130,6 +130,14 @@ if (loading) {
 
       <main className="min-h-screen bg-[#0B1120] px-6 py-12 text-slate-100">
         <div className="mx-auto max-w-5xl space-y-6">
+          <Link
+            href={`/profile/${resumeId}`}
+            className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-[#111827] px-5 py-3 text-sm font-semibold text-slate-100 shadow-sm ring-1 ring-inset ring-white/[0.06] transition hover:border-blue-400/40 hover:bg-white/[0.04]"
+          >
+            <span aria-hidden>←</span>
+            Back to Profile
+          </Link>
+
           <section className="rounded-[2rem] border border-white/10 bg-[#111827] p-8 shadow-sm">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
@@ -290,14 +298,6 @@ if (loading) {
             </motion.div>
           )}
 
-          <div>
-            <a
-              href={`/profile/${resumeId}`}
-              className="rounded-2xl border border-white/10 px-5 py-2.5 text-sm font-medium text-slate-200"
-            >
-              Back to Profile
-            </a>
-          </div>
         </div>
       </main>
 

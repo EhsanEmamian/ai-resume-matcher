@@ -59,6 +59,19 @@ function formatScorePoints(value: number) {
   return value.toFixed(2);
 }
 
+const MAX_SKILL_BADGES = 10;
+
+function truncateSkillList(skills: string[]) {
+  if (skills.length <= MAX_SKILL_BADGES) {
+    return { visible: skills, overflowCount: 0 };
+  }
+
+  return {
+    visible: skills.slice(0, MAX_SKILL_BADGES),
+    overflowCount: skills.length - MAX_SKILL_BADGES,
+  };
+}
+
 function SkillChip({
   skill,
   matched = false,
@@ -122,6 +135,9 @@ export default function MatchResultCard({ match }: MatchResultCardProps) {
     match.matched_skills?.length
       ? match.matched_skills
       : breakdown?.matched_skills ?? [];
+  const requiredSkills = match.job.required_skills ?? [];
+  const { visible: visibleRequiredSkills, overflowCount: requiredOverflow } =
+    truncateSkillList(requiredSkills);
 
   return (
     <motion.article
@@ -169,6 +185,24 @@ export default function MatchResultCard({ match }: MatchResultCardProps) {
               <p className="text-sm text-slate-500">No direct skill overlap</p>
             )}
           </div>
+
+          {requiredSkills.length > 0 && (
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Required skills
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {visibleRequiredSkills.map((skill) => (
+                  <SkillChip key={skill} skill={skill} />
+                ))}
+                {requiredOverflow > 0 && (
+                  <span className="inline-flex rounded-full border border-white/10 bg-[#0f172a] px-2.5 py-1 font-mono text-[11px] text-slate-400">
+                    + {requiredOverflow} more
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex shrink-0 flex-col items-center gap-3 rounded-2xl border border-white/10 bg-[#0f172a] px-5 py-5 sm:min-w-[180px]">

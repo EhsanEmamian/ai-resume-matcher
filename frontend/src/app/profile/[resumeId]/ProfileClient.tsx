@@ -76,7 +76,7 @@ function JobDiscoveryStatus({
 
     const timeoutId = setTimeout(() => {
       router.push(`/matches/${resumeId}`);
-    }, 1200);
+    }, 5000);
 
     return () => clearTimeout(timeoutId);
   }, [status, resumeId, router]);
@@ -119,7 +119,8 @@ function JobDiscoveryStatus({
             </h2>
             <p className="mt-2 text-sm leading-6 text-emerald-200/80">
               Discovered {matchCount} job{matchCount === 1 ? "" : "s"} and
-              generated your match scores. Redirecting to your results…
+              generated your match scores. Redirecting to your results in a few
+              seconds…
             </p>
           </div>
         </div>
