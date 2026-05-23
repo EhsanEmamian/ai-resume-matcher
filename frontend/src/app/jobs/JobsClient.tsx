@@ -10,6 +10,7 @@ import {
   SlidersHorizontal,
   Trash2,
 } from "lucide-react";
+import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -26,6 +27,28 @@ type SourceFilter = "all" | "manual" | "adzuna";
 type SortValue = "newest" | "title" | "company";
 
 const PAGE_SIZE = 10;
+
+const jobListVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const jobCardVariants = {
+  hidden: { opacity: 0, y: 24 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.45,
+      ease: [0.22, 1, 0.36, 1] as const,
+    },
+  },
+};
 
 function truncateText(text: string, maxLength = 220) {
   if (text.length <= maxLength) return text;
@@ -369,18 +392,26 @@ export default function JobsClient() {
             </div>
           ) : (
             <>
-              {paginatedJobs.map((job) => {
-                const isExpanded = expandedJobIds.includes(job.id);
-                const fullJobText = job.source_text || job.description;
-                const descriptionToShow = isExpanded
-                  ? fullJobText
-                  : truncateText(fullJobText);
+              <motion.div
+                className="space-y-6"
+                variants={jobListVariants}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-50px" }}
+              >
+                {paginatedJobs.map((job) => {
+                  const isExpanded = expandedJobIds.includes(job.id);
+                  const fullJobText = job.source_text || job.description;
+                  const descriptionToShow = isExpanded
+                    ? fullJobText
+                    : truncateText(fullJobText);
 
-                return (
-                  <article
-                    key={job.id}
-                    className="rounded-[2rem] border border-white/10 bg-[#111827] p-6 shadow-sm"
-                  >
+                  return (
+                    <motion.article
+                      key={job.id}
+                      variants={jobCardVariants}
+                      className="rounded-[2rem] border border-white/10 bg-[#111827] p-6 shadow-sm transition-all duration-300 hover:border-blue-500/30 hover:shadow-[0_0_20px_rgba(59,130,246,0.15)]"
+                    >
                     <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                       <div>
                         <h2 className="text-2xl font-semibold tracking-tight">
@@ -501,9 +532,10 @@ export default function JobsClient() {
                         </a>
                       </div>
                     )}
-                  </article>
-                );
-              })}
+                    </motion.article>
+                  );
+                })}
+              </motion.div>
 
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-[2rem] border border-white/10 bg-[#111827] p-4 shadow-sm">
                 <p className="text-sm text-slate-400">

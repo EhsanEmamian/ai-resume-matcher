@@ -9,6 +9,8 @@ import httpx
 
 from app.config import settings
 from app.exceptions import AppError
+from app.jobs.base_client import BaseJobProvider
+from app.jobs.schemas import ExternalJobSearchRequest
 from app.jobs.skill_extractor import (
     extract_experience_requirement_from_text,
     extract_languages_from_text,
@@ -140,6 +142,46 @@ def _normalize_jooble_job(job: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+class JoobleClient(BaseJobProvider):
+    def search(self, request: ExternalJobSearchRequest) -> list[dict[str, Any]]:
+        if not settings.JOOBLE_API_KEY:
+            raise JoobleClientError("Jooble API key is not configured.", status_code=400)
+
+        base_url = settings.JOOBLE_BASE_URL.rstrip("/")
+        url = f"{base_url}/{settings.JOOBLE_API_KEY}"
+
+        payload = {
+            "keywords": request.keyword,
+            "location": _build_location(request.location, request.country),
+            "page": request.page,
+        }
+
+        try:
+            response = httpx.post(
+                url,
+                json=payload,
+                timeout=20.0,
+                headers={"Content-Type": "application/json"},
+            )
+            response.raise_for_status()
+        except httpx.TimeoutException as exc:
+            raise JoobleClientError("Jooble request timed out.") from exc
+        except httpx.HTTPStatusError as exc:
+            raise JoobleClientError(
+                f"Jooble API returned HTTP {exc.response.status_code}."
+            ) from exc
+        except httpx.HTTPError as exc:
+            raise JoobleClientError("Failed to connect to Jooble API.") from exc
+
+        data = response.json()
+        jobs = data.get("jobs", [])
+
+        if not isinstance(jobs, list):
+            raise JoobleClientError("Unexpected Jooble response format.")
+
+        return [_normalize_jooble_job(job) for job in jobs[: request.max_results]]
+
+
 def search_jooble_jobs(
     keyword: str,
     location: str,
@@ -147,39 +189,13 @@ def search_jooble_jobs(
     max_results: int,
     page: int = 1,
 ) -> list[dict[str, Any]]:
-    if not settings.JOOBLE_API_KEY:
-        raise JoobleClientError("Jooble API key is not configured.", status_code=400)
-
-    base_url = settings.JOOBLE_BASE_URL.rstrip("/")
-    url = f"{base_url}/{settings.JOOBLE_API_KEY}"
-
-    payload = {
-        "keywords": keyword,
-        "location": _build_location(location, country),
-        "page": page,
-    }
-
-    try:
-        response = httpx.post(
-            url,
-            json=payload,
-            timeout=20.0,
-            headers={"Content-Type": "application/json"},
+    return JoobleClient().search(
+        ExternalJobSearchRequest(
+            keyword=keyword,
+            location=location,
+            country=country,
+            max_results=max_results,
+            page=page,
+            source="jooble",
         )
-        response.raise_for_status()
-    except httpx.TimeoutException as exc:
-        raise JoobleClientError("Jooble request timed out.") from exc
-    except httpx.HTTPStatusError as exc:
-        raise JoobleClientError(
-            f"Jooble API returned HTTP {exc.response.status_code}."
-        ) from exc
-    except httpx.HTTPError as exc:
-        raise JoobleClientError("Failed to connect to Jooble API.") from exc
-
-    data = response.json()
-    jobs = data.get("jobs", [])
-
-    if not isinstance(jobs, list):
-        raise JoobleClientError("Unexpected Jooble response format.")
-
-    return [_normalize_jooble_job(job) for job in jobs[:max_results]]
+    )

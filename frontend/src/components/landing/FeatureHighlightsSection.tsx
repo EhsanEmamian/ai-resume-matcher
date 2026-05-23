@@ -1,3 +1,29 @@
+"use client";
+
+import { motion } from "framer-motion";
+
+const staggerGridVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.15,
+    },
+  },
+};
+
+const staggerItemVariants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.45,
+      ease: [0.22, 1, 0.36, 1] as const,
+    },
+  },
+};
+
 const features = [
   {
     eyebrow: "Validation",
@@ -37,10 +63,17 @@ export default function FeatureHighlightsSection() {
           </p>
         </div>
 
-        <div className="mt-10 grid gap-4 md:grid-cols-3">
+        <motion.div
+          className="mt-10 grid gap-4 md:grid-cols-3"
+          variants={staggerGridVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+        >
           {features.map((feature) => (
-            <article
+            <motion.article
               key={feature.title}
+              variants={staggerItemVariants}
               className="rounded-[1.75rem] border border-white/10 bg-[#111827] p-6 transition hover:border-blue-400/30 hover:bg-[#1B2537]"
             >
               <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate-500">
@@ -54,9 +87,9 @@ export default function FeatureHighlightsSection() {
               <p className="mt-3 text-sm leading-7 text-slate-400">
                 {feature.text}
               </p>
-            </article>
+            </motion.article>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );

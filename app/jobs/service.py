@@ -1,6 +1,10 @@
+import logging
+import uuid
+
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
+from app.database import SessionLocal
 from app.jobs.models import JobPosting
 from app.jobs.schemas import JobPostingCreate
 from app.jobs.source_enricher import fetch_source_text_result
@@ -10,6 +14,8 @@ from app.jobs.skill_extractor import (
     extract_salary_text_from_text,
     extract_skills_from_text,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def create_job(db: Session, payload: JobPostingCreate) -> JobPosting:
@@ -32,25 +38,75 @@ def create_job(db: Session, payload: JobPostingCreate) -> JobPosting:
     return job
 
 
-def import_external_job(db: Session, payload: dict) -> tuple[str, JobPosting]:
+def _find_existing_external_job(
+    db: Session,
+    source: str | None,
+    source_id: str | None,
+) -> JobPosting | None:
+    if not source or not source_id:
+        return None
+
+    return db.scalar(
+        select(JobPosting).where(
+            JobPosting.source == source,
+            JobPosting.source_id == source_id,
+        )
+    )
+
+
+def _prepare_immediate_import_payload(payload: dict) -> dict:
+    immediate = {**payload}
+    immediate.setdefault("required_skills", [])
+    immediate.setdefault("required_languages", [])
+
+    if not immediate.get("enrichment_status"):
+        immediate["enrichment_status"] = (
+            "processing" if immediate.get("source_url") else "pending"
+        )
+
+    return immediate
+
+
+def import_external_job(db: Session, payload: dict) -> tuple[str, JobPosting, bool]:
     source = payload.get("source")
     source_id = payload.get("source_id")
 
-    existing = None
-    if source and source_id:
-        existing = db.scalar(
-            select(JobPosting).where(
-                JobPosting.source == source,
-                JobPosting.source_id == source_id,
-            )
-        )
-
+    existing = _find_existing_external_job(db, source, source_id)
     if existing is not None:
-        return "already_exists", existing
+        return "already_exists", existing, False
 
-    title = payload.get("title", "")
-    description = payload.get("description", "")
-    source_url = payload.get("source_url")
+    immediate_payload = _prepare_immediate_import_payload(payload)
+    job = JobPosting(**immediate_payload)
+    db.add(job)
+    db.commit()
+    db.refresh(job)
+    return "imported", job, True
+
+
+def enrich_job_background(job_id: uuid.UUID, payload: dict) -> None:
+    db = SessionLocal()
+    try:
+        _enrich_job_background(db, job_id, payload)
+    except Exception:
+        logger.exception("Background job enrichment failed for job_id=%s", job_id)
+        db.rollback()
+        job = db.get(JobPosting, job_id)
+        if job is not None:
+            job.enrichment_status = "failed"
+            job.enrichment_error = "Background enrichment failed unexpectedly."
+            db.commit()
+    finally:
+        db.close()
+
+
+def _enrich_job_background(db: Session, job_id: uuid.UUID, payload: dict) -> None:
+    job = db.get(JobPosting, job_id)
+    if job is None:
+        return
+
+    title = payload.get("title", job.title) or ""
+    description = payload.get("description", job.description) or ""
+    source_url = payload.get("source_url", job.source_url)
 
     source_text = None
     enrichment_status = "not_attempted"
@@ -86,50 +142,31 @@ def import_external_job(db: Session, payload: dict) -> tuple[str, JobPosting]:
         description=extraction_text,
     )
 
-    if source_text and not payload.get("source_text"):
-        payload["source_text"] = source_text
+    if source_text:
+        job.source_text = source_text
 
-    if not payload.get("enrichment_status"):
-        payload["enrichment_status"] = enrichment_status
+    job.enrichment_status = enrichment_status
+    job.enrichment_error = enrichment_error
+    job.enrichment_failure_reason = enrichment_failure_reason
 
-    if enrichment_error and not payload.get("enrichment_error"):
-        payload["enrichment_error"] = enrichment_error
+    if enrichment_result is not None:
+        job.enrichment_raw_html_length = enrichment_result.raw_html_length
+        job.enrichment_text_word_count = enrichment_result.text_word_count
+        job.enrichment_text_preview = enrichment_result.text_preview
 
-    if enrichment_failure_reason and not payload.get("enrichment_failure_reason"):
-        payload["enrichment_failure_reason"] = enrichment_failure_reason
+    if not payload.get("required_skills") and extracted_skills:
+        job.required_skills = extracted_skills
 
-    if payload.get("enrichment_raw_html_length") is None:
-        payload["enrichment_raw_html_length"] = (
-            enrichment_result.raw_html_length if source_url and enrichment_result else None
-        )
+    if not payload.get("required_languages") and extracted_languages:
+        job.required_languages = extracted_languages
 
-    if payload.get("enrichment_text_word_count") is None:
-        payload["enrichment_text_word_count"] = (
-            enrichment_result.text_word_count if source_url and enrichment_result else None
-        )
+    if not payload.get("experience_requirement") and extracted_experience:
+        job.experience_requirement = extracted_experience
 
-    if payload.get("enrichment_text_preview") is None:
-        payload["enrichment_text_preview"] = (
-            enrichment_result.text_preview if source_url and enrichment_result else None
-        )
+    if not payload.get("salary_text") and extracted_salary_text:
+        job.salary_text = extracted_salary_text
 
-    if not payload.get("required_skills"):
-        payload["required_skills"] = extracted_skills
-
-    if not payload.get("required_languages"):
-        payload["required_languages"] = extracted_languages
-
-    if not payload.get("experience_requirement"):
-        payload["experience_requirement"] = extracted_experience
-
-    if not payload.get("salary_text"):
-        payload["salary_text"] = extracted_salary_text
-
-    job = JobPosting(**payload)
-    db.add(job)
     db.commit()
-    db.refresh(job)
-    return "imported", job
 
 
 def backfill_job_skills(db: Session) -> dict:

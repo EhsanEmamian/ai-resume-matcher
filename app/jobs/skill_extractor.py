@@ -168,8 +168,18 @@ def extract_experience_requirement_from_text(
     title: str,
     description: str,
 ) -> str | None:
+    title_lower = title.lower()
     text = _normalize_text(title, description)
 
+    # اولویت اول: بررسی مستقیم عنوان شغل (Title) که دقیق‌ترین سیگنال است
+    if "senior" in title_lower or "lead" in title_lower or "principal" in title_lower:
+        return "Senior level"
+    if "junior" in title_lower or "entry" in title_lower or "trainee" in title_lower:
+        return "Junior level"
+    if "intern" in title_lower or "praktik" in title_lower:
+        return "Internship"
+
+    # اولویت دوم: الگوهای منظم برای استخراج سال سابقه از متن آگهی
     patterns = [
         (
             r"\b(\d+)\+\s+years?\b",
@@ -198,16 +208,13 @@ def extract_experience_requirement_from_text(
         if match:
             return formatter(match)
 
+    # اولویت سوم: عبارات متنی در توضیحات (با دقت بیشتر)
+    if _contains_term(text, "mehrjährige erfahrung"):
+        return "Several years of experience"
     if _contains_term(text, "erste programmiererfahrung"):
         return "First programming experience"
     if _contains_term(text, "berufserfahrung"):
         return "Professional experience required"
-    if _contains_term(text, "entry level"):
-        return "Entry level"
-    if _contains_term(text, "junior"):
-        return "Junior level"
-    if _contains_term(text, "mehrjährige erfahrung"):
-        return "Several years of experience"
 
     return None
 

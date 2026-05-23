@@ -1,14 +1,12 @@
 import uuid
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.exceptions import NotFoundError
 from app.jobs import ingestion, service
-from app.jobs.adzuna_client import search_jobs
-from app.jobs.arbeitnow_client import search_arbeitnow_jobs
-from app.jobs.jooble_client import search_jooble_jobs
+from app.jobs.base_client import get_job_client
 from app.jobs.schemas import (
     BackfillJobSkillsResult,
     ClearJobsBySourceResult,
@@ -49,9 +47,21 @@ def create_job(
 )
 def import_external_job(
     payload: ImportExternalJobRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ) -> ImportExternalJobResult:
-    status_value, job = service.import_external_job(db, payload.model_dump())
+    payload_data = payload.model_dump()
+    status_value, job, enqueue_enrichment = service.import_external_job(
+        db, payload_data
+    )
+
+    if enqueue_enrichment:
+        background_tasks.add_task(
+            service.enrich_job_background,
+            job.id,
+            payload_data,
+        )
+
     return ImportExternalJobResult(status=status_value, job=job)
 
 
@@ -120,29 +130,8 @@ def ingest_jobs(
 def search_external_jobs(
     payload: ExternalJobSearchRequest,
 ) -> ExternalJobSearchResult:
-    if payload.source == "arbeitnow":
-        jobs = search_arbeitnow_jobs(
-            keyword=payload.keyword,
-            location=payload.location,
-            page=payload.page,
-            max_results=payload.max_results,
-        )
-    elif payload.source == "jooble":
-        jobs = search_jooble_jobs(
-            keyword=payload.keyword,
-            location=payload.location,
-            country=payload.country,
-            max_results=payload.max_results,
-            page=payload.page,
-        )
-    else:
-        jobs = search_jobs(
-            keyword=payload.keyword,
-            location=payload.location,
-            country=payload.country,
-            max_results=payload.max_results,
-            page=payload.page,
-        )
+    client = get_job_client(payload.source)
+    jobs = client.search(payload)
 
     return ExternalJobSearchResult(
         total=len(jobs),
