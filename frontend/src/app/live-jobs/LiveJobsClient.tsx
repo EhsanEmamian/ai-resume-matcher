@@ -29,17 +29,16 @@ export default function LiveJobsClient() {
     setCountry,
     source,
     setSource,
-    maxResults,
-    setMaxResults,
-    page,
-    setPage,
     profileHints,
     availableCities,
     keywordSuggestions,
     showKeywordSuggestions,
     results,
+    hasMoreResults,
     searched,
     loading,
+    isLoadingMore,
+    loadMore,
     error,
     expandedIndexes,
     savedJobIds,
@@ -140,10 +139,6 @@ export default function LiveJobsClient() {
             onCountryChange={setCountry}
             source={source}
             onSourceChange={setSource}
-            page={page}
-            onPageChange={setPage}
-            maxResults={maxResults}
-            onMaxResultsChange={setMaxResults}
             profileHints={profileHints}
             loading={loading}
             error={error}
@@ -160,10 +155,6 @@ export default function LiveJobsClient() {
                 live results from{" "}
                 <span className="font-mono font-semibold text-blue-300">
                   {source}
-                </span>{" "}
-                on page{" "}
-                <span className="font-mono font-semibold text-slate-100">
-                  {page}
                 </span>
                 .
               </p>
@@ -229,6 +220,19 @@ export default function LiveJobsClient() {
                   />
                 );
               })}
+
+              {hasMoreResults && (
+                <div className="flex justify-center pt-2">
+                  <button
+                    type="button"
+                    onClick={() => void loadMore()}
+                    disabled={isLoadingMore || loading}
+                    className="rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-3 text-sm font-semibold text-slate-200 shadow-sm transition-all duration-300 hover:border-blue-500/30 hover:bg-blue-500/10 hover:text-blue-100 hover:shadow-[0_0_20px_rgba(59,130,246,0.12)] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isLoadingMore ? "Loading..." : "Load More"}
+                  </button>
+                </div>
+              )}
             </motion.div>
           )}
         </div>
