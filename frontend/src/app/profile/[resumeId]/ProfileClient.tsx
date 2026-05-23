@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { BarChart3, FileText, Languages, Sparkles, Wrench } from "lucide-react";
 import { use, useEffect, useMemo, useRef, useState } from "react";
 import { useDiscoveryStatus } from "@/hooks/useDiscoveryStatus";
+import { saveHeroState } from "@/lib/heroState";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AlertBanner from "@/components/AlertBanner";
@@ -15,6 +16,7 @@ import {
   getJobs,
   getResumeFull,
   type ResumeFullResponse,
+  type ResumeProfile,
 } from "@/lib/api";
 import { deriveSearchSuggestions } from "@/lib/profileSearchSuggestions";
 import { useCountUp } from "@/lib/useCountUp";
@@ -40,9 +42,32 @@ function InfoBlock({
   );
 }
 
-function JobDiscoveryStatus({ resumeId }: { resumeId: string }) {
+function JobDiscoveryStatus({
+  resumeId,
+  profile,
+}: {
+  resumeId: string;
+  profile: ResumeProfile | null | undefined;
+}) {
   const router = useRouter();
   const { status, matchCount } = useDiscoveryStatus(resumeId);
+
+  useEffect(() => {
+    if (status !== "ready" || !profile) {
+      return;
+    }
+
+    saveHeroState({
+      type: "parsed_resume",
+      resumeId,
+      topRole:
+        profile.suggested_roles[0]?.trim() ||
+        profile.skills[0]?.trim() ||
+        "Developer",
+      topSkills: profile.skills.slice(0, 5),
+      matchCount,
+    });
+  }, [status, matchCount, profile, resumeId]);
 
   useEffect(() => {
     if (status !== "ready") {
@@ -262,7 +287,7 @@ export default function ProfileClient({
 
       <main className="min-h-screen bg-[#0B1120] px-6 py-12 text-slate-100">
         <div className="mx-auto max-w-5xl space-y-8">
-          <JobDiscoveryStatus resumeId={resumeId} />
+          <JobDiscoveryStatus resumeId={resumeId} profile={data.profile} />
 
           <section className="rounded-[2rem] border border-white/10 bg-[#111827] p-8 shadow-sm">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

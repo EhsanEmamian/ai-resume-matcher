@@ -13,6 +13,7 @@ import {
   type ManualProfileSeniority,
   type MatchItem,
 } from "@/lib/api";
+import { saveHeroState } from "@/lib/heroState";
 import { buildManualProfilePayload } from "@/lib/manualProfile";
 
 export default function QuickMatchClient() {
@@ -37,6 +38,14 @@ export default function QuickMatchClient() {
     try {
       const payload = buildManualProfilePayload(role, skills, seniority);
       const result = await previewMatches(payload);
+
+      saveHeroState({
+        type: "quick_try",
+        topRole: `${seniority} ${role}`,
+        topSkills: skills.slice(0, 5),
+        matchCount: result.items.length,
+      });
+
       setMatches(result.items);
     } catch (err: unknown) {
       const message =

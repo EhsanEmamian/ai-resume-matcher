@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getDiscoveryStatus } from "@/lib/api";
+import { updateParsedResumeMatchCount } from "@/lib/heroState";
 
 const POLL_INTERVAL_MS = 1500;
 const MAX_ATTEMPTS = 20;
@@ -46,6 +47,10 @@ export function useDiscoveryStatus(resumeId: string) {
 
         setStatus(result.status);
         setMatchCount(result.match_count);
+
+        if (result.status === "ready") {
+          updateParsedResumeMatchCount(resumeId, result.match_count);
+        }
 
         if (isTerminalStatus(result.status)) {
           clearPolling();

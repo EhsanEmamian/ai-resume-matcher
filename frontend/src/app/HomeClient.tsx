@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -8,7 +8,14 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { ApiError, uploadAndParseResume } from "@/lib/api";
 import AlertBanner from "@/components/AlertBanner";
+import HeroReturning from "@/components/landing/HeroReturning";
 import HeroSection from "@/components/landing/HeroSection";
+import {
+  loadHeroState,
+  saveHeroState,
+  clearHeroState,
+  type HeroState,
+} from "@/lib/heroState";
 import HowItWorksSection from "@/components/landing/HowItWorksSection";
 import FeatureHighlightsSection from "@/components/landing/FeatureHighlightsSection";
 import TechStackBar from "@/components/landing/TechStackBar";
@@ -37,6 +44,19 @@ export default function HomeClient() {
 
   const router = useRouter();
 
+  const [hydrated, setHydrated] = useState(false);
+  const [heroState, setHeroState] = useState<HeroState>({ type: "none" });
+
+  useEffect(() => {
+    setHeroState(loadHeroState());
+    setHydrated(true);
+  }, []);
+
+  function handleStartFresh() {
+    clearHeroState();
+    setHeroState({ type: "none" });
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
@@ -52,6 +72,19 @@ export default function HomeClient() {
 
     try {
       const data = await uploadAndParseResume(file);
+      const profile = data.profile;
+
+      saveHeroState({
+        type: "parsed_resume",
+        resumeId: data.resume_id,
+        topRole:
+          profile.suggested_roles[0]?.trim() ||
+          profile.skills[0]?.trim() ||
+          "Developer",
+        topSkills: profile.skills.slice(0, 5),
+        matchCount: 0,
+      });
+
       router.push(`/profile/${data.resume_id}`);
     } catch (err: any) {
       if (err instanceof ApiError && err.status === 422 && err.detail) {
@@ -83,7 +116,11 @@ export default function HomeClient() {
       <Header />
 
       <main className="min-h-screen bg-[#0B1120] text-slate-100">
-        <HeroSection />
+        {hydrated && heroState.type !== "none" ? (
+          <HeroReturning state={heroState} onStartFresh={handleStartFresh} />
+        ) : (
+          <HeroSection />
+        )}
 
         <section
           id="try-it"
