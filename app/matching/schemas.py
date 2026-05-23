@@ -1,7 +1,8 @@
 import uuid
 from datetime import datetime
+from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class MatchedJobRead(BaseModel):
@@ -35,3 +36,20 @@ class MatchResultRead(BaseModel):
 class MatchListResponse(BaseModel):
     total: int
     items: list[MatchResultRead]
+
+
+class ProfilePreviewRequest(BaseModel):
+    skills: list[str] = Field(
+        ...,
+        min_length=1,
+        description="Skills and technologies selected for the manual profile.",
+    )
+    suggested_roles: list[str] = Field(
+        ...,
+        min_length=1,
+        description="Role keywords used for title overlap scoring.",
+    )
+    seniority_level: Literal["Junior", "Mid", "Senior"] = Field(
+        ...,
+        description="Candidate seniority for display and role expansion.",
+    )

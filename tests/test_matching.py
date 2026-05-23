@@ -83,3 +83,26 @@ def test_list_matches_with_min_score_filter(client: TestClient) -> None:
     assert "total" in filtered_data
     assert "items" in filtered_data
     assert isinstance(filtered_data["items"], list)
+
+
+def test_preview_matches_without_resume(client: TestClient) -> None:
+    _create_job(client, "Backend Engineer", ["Python", "FastAPI"], remote=True)
+
+    response = client.post(
+        "/matches/preview",
+        json={
+            "skills": ["Python", "FastAPI"],
+            "suggested_roles": ["backend", "backend developer"],
+            "seniority_level": "Mid",
+        },
+    )
+    assert response.status_code == 200, response.text
+
+    data = response.json()
+    assert data["total"] >= 1
+    assert isinstance(data["items"], list)
+
+    first_match = data["items"][0]
+    assert first_match["resume_id"] == "00000000-0000-0000-0000-000000000000"
+    assert "score" in first_match
+    assert "job" in first_match

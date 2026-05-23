@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -183,6 +184,27 @@ export default function HomeClient() {
               )}
             </div>
           </motion.div>
+        </section>
+
+        <section className="border-t border-white/[0.08] bg-[#0F172A] px-6 py-16">
+          <div className="mx-auto flex max-w-4xl flex-col items-center gap-5 text-center">
+            <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate-500">
+              Quick Try
+            </p>
+            <h2 className="text-2xl font-bold tracking-[-0.02em] text-slate-50 sm:text-3xl">
+              No resume handy? Try the matching engine
+            </h2>
+            <p className="max-w-xl text-sm leading-7 text-slate-400">
+              Build a manual profile in under a minute and preview explainable job
+              matches against your saved postings — no PDF upload required.
+            </p>
+            <Link
+              href="/quick-match"
+              className="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-slate-100 transition hover:border-white/20 hover:bg-white/[0.07]"
+            >
+              Open Quick Match →
+            </Link>
+          </div>
         </section>
 
         <HowItWorksSection />

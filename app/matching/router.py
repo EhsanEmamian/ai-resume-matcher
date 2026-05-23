@@ -6,9 +6,23 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.exceptions import NotFoundError
 from app.matching import service
-from app.matching.schemas import MatchListResponse
+from app.matching.schemas import MatchListResponse, ProfilePreviewRequest
 
 router = APIRouter()
+
+
+@router.post(
+    "/preview",
+    response_model=MatchListResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Preview matches for a manual profile without persisting a resume",
+)
+def preview_matches(
+    payload: ProfilePreviewRequest,
+    db: Session = Depends(get_db),
+) -> MatchListResponse:
+    items = service.preview_matches_for_profile(db, payload)
+    return MatchListResponse(total=len(items), items=items)
 
 
 @router.post(

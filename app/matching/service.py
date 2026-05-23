@@ -1,5 +1,6 @@
 import re
 import uuid
+from dataclasses import dataclass
 from datetime import datetime, timezone
 
 from sqlalchemy import select
@@ -8,7 +9,17 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.jobs.models import JobPosting
 from app.matching.models import MatchResult
+from app.matching.schemas import MatchResultRead, MatchedJobRead, ProfilePreviewRequest
 from app.resume.models import Resume, ResumeProfile
+
+PREVIEW_RESUME_ID = uuid.UUID(int=0)
+
+
+@dataclass
+class _ProfileSnapshot:
+    skills: list[str]
+    technologies: list[str]
+    suggested_roles: list[str]
 
 
 def _normalize_list(values: list[str]) -> set[str]:
@@ -59,7 +70,10 @@ def _remote_bonus(job: JobPosting) -> tuple[float, str | None]:
     return 0.0, None
 
 
-def calculate_match_score(profile: ResumeProfile, job: JobPosting) -> tuple[float, str, dict, list[str]]:
+def calculate_match_score(
+    profile: ResumeProfile | _ProfileSnapshot,
+    job: JobPosting,
+) -> tuple[float, str, dict, list[str]]:
     reasons: list[str] = []
 
     skill_score, skill_reason, matched_skills = _skills_overlap_score(
@@ -87,6 +101,55 @@ def calculate_match_score(profile: ResumeProfile, job: JobPosting) -> tuple[floa
     }
 
     return final_score, " ".join(reasons), breakdown, matched_skills
+
+
+def _snapshot_from_preview(payload: ProfilePreviewRequest) -> _ProfileSnapshot:
+    skills = [value.strip() for value in payload.skills if value and value.strip()]
+    roles = [
+        value.strip()
+        for value in payload.suggested_roles
+        if value and value.strip()
+    ]
+    seniority = payload.seniority_level.strip().lower()
+
+    expanded_roles = list(dict.fromkeys([*roles, *[f"{seniority} {role}" for role in roles]]))
+
+    return _ProfileSnapshot(
+        skills=skills,
+        technologies=skills,
+        suggested_roles=expanded_roles,
+    )
+
+
+def preview_matches_for_profile(
+    db: Session,
+    payload: ProfilePreviewRequest,
+) -> list[MatchResultRead]:
+    profile = _snapshot_from_preview(payload)
+    jobs = list(db.scalars(select(JobPosting)).all())
+    now = datetime.now(timezone.utc)
+
+    preview_items: list[MatchResultRead] = []
+
+    for job in jobs:
+        score, reason, breakdown, matched_skills = calculate_match_score(profile, job)
+
+        preview_items.append(
+            MatchResultRead(
+                id=uuid.uuid4(),
+                resume_id=PREVIEW_RESUME_ID,
+                job_id=job.id,
+                score=score,
+                reason=reason,
+                score_breakdown=breakdown,
+                matched_skills=matched_skills,
+                matched_at=now,
+                job=MatchedJobRead.model_validate(job),
+            )
+        )
+
+    preview_items.sort(key=lambda item: item.score, reverse=True)
+    return preview_items
 
 
 def generate_matches_for_resume(db: Session, resume_id: uuid.UUID) -> list[MatchResult]:

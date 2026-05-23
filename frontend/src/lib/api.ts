@@ -23,6 +23,26 @@ export type ResumeUploadAndParseResponse = {
   profile: ResumeProfile;
 };
 
+export type ManualProfileRole =
+  | "Backend"
+  | "Frontend"
+  | "Full Stack"
+  | "Data"
+  | "AI";
+
+export type ManualProfileSeniority = "Junior" | "Mid" | "Senior";
+
+export type ManualProfile = {
+  skills: string[];
+  suggested_roles: string[];
+  seniority_level: ManualProfileSeniority;
+};
+
+export type MatchListResponse = {
+  total: number;
+  items: MatchItem[];
+};
+
 export type MatchItem = {
   id: string;
   score: number;
@@ -240,6 +260,20 @@ export async function getMatches(
     `${API_BASE_URL}/matches/${resumeId}?min_score=0&sort_by=score`
   );
   return handleResponse<{ items: MatchItem[] }>(response);
+}
+
+export async function previewMatches(
+  profile: ManualProfile
+): Promise<MatchListResponse> {
+  const response = await fetch(`${API_BASE_URL}/matches/preview`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(profile),
+  });
+
+  return handleResponse<MatchListResponse>(response);
 }
 
 export async function ingestJobs(
