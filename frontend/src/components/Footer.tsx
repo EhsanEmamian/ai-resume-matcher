@@ -72,12 +72,14 @@ export default function Footer() {
       </div>
 
       <div className="border-t border-white/10">
-        <div className="mx-auto flex max-w-6xl flex-col gap-2 px-6 py-4 text-xs text-white/50 sm:flex-row sm:items-center sm:justify-between">
-          <p>Built by Ehsan Emamian</p>
+        <div className="mx-auto flex max-w-6xl flex-col gap-2 px-6 py-4 text-xs text-white/50 sm:flex-row sm:items-center sm:justify-center">
           <p>
             FastAPI · PostgreSQL · Next.js · Claude AI · Adzuna · Arbeitnow ·
             Remotive · Jooble
           </p>
+        </div>
+        <div className="mt-8 pb-6 text-center text-sm text-slate-500">
+          &copy; {new Date().getFullYear()} Ehsan Emamian. All rights reserved.
         </div>
       </div>
     </footer>
