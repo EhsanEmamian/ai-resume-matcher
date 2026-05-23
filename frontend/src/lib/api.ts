@@ -1,4 +1,22 @@
-const API_BASE_URL = "http://localhost:8000";
+const DEV_API_BASE_URL = "http://localhost:8000";
+
+function resolveApiBaseUrl(): string {
+  const configured = process.env.NEXT_PUBLIC_API_URL?.trim();
+
+  if (configured) {
+    return configured.replace(/\/$/, "");
+  }
+
+  if (process.env.NODE_ENV === "development") {
+    return DEV_API_BASE_URL;
+  }
+
+  throw new Error(
+    "NEXT_PUBLIC_API_URL is not set. Add it to your Vercel project environment variables."
+  );
+}
+
+export const API_BASE_URL = resolveApiBaseUrl();
 
 export type JobSource = "adzuna" | "arbeitnow" | "jooble" | "remotive";
 

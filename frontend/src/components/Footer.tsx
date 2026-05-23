@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "@/lib/api";
+
 export default function Footer() {
   return (
     <footer className="border-t border-white/10 bg-[#07111f] text-white">
@@ -43,7 +45,7 @@ export default function Footer() {
             <p>
               API Docs:{" "}
               <a
-                href="http://localhost:8000/docs"
+                href={`${API_BASE_URL}/docs`}
                 target="_blank"
                 rel="noreferrer"
                 className="underline decoration-white/30 underline-offset-4 hover:text-white"
