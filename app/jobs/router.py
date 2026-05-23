@@ -7,6 +7,7 @@ from app.database import get_db
 from app.exceptions import NotFoundError
 from app.jobs import ingestion, service
 from app.jobs.base_client import get_job_client
+from app.jobs.service import fetch_remotive_jobs
 from app.jobs.schemas import (
     BackfillJobSkillsResult,
     ClearJobsBySourceResult,
@@ -127,11 +128,14 @@ def ingest_jobs(
     status_code=status.HTTP_200_OK,
     summary="Search external jobs live",
 )
-def search_external_jobs(
+async def search_external_jobs(
     payload: ExternalJobSearchRequest,
 ) -> ExternalJobSearchResult:
-    client = get_job_client(payload.source)
-    jobs = client.search(payload)
+    if payload.source == "remotive":
+        jobs = await fetch_remotive_jobs(keyword=payload.keyword, limit=payload.max_results)
+    else:
+        client = get_job_client(payload.source)
+        jobs = client.search(payload)
 
     return ExternalJobSearchResult(
         total=len(jobs),
