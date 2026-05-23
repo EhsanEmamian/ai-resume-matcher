@@ -4,7 +4,7 @@ import hashlib
 import io
 from pathlib import Path
 
-import pdfplumber
+from pypdf import PdfReader
 
 MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024
 MAX_PAGE_COUNT = 3
@@ -28,8 +28,8 @@ def compute_sha256(file_bytes: bytes) -> str:
 
 def get_pdf_page_count(file_bytes: bytes) -> int:
     try:
-        with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
-            return len(pdf.pages)
+        reader = PdfReader(io.BytesIO(file_bytes))
+        return len(reader.pages)
     except Exception as exc:
         raise PdfValidationError(
             "Unable to read PDF. The file may be corrupted or password-protected."

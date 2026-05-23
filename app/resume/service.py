@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gc
 import shutil
 import uuid
 from datetime import datetime, time, timezone
@@ -12,7 +13,11 @@ from sqlalchemy.orm import Session, selectinload
 from app.ai.resume_parser import ResumeParsingError, parse_resume_with_ai
 from app.matching.models import MatchResult
 from app.resume.models import Resume, ResumeProfile
-from app.resume.pdf_extractor import PDFExtractionError, extract_text_from_pdf
+from app.resume.pdf_extractor import (
+    PDFExtractionError,
+    extract_text_from_pdf,
+    extract_text_from_pdf_bytes,
+)
 from app.resume.text_utils import normalize_resume_text
 from app.resume.validation import validate_resume_document
 
@@ -121,8 +126,10 @@ def create_resume_from_bytes(
     file_path = None
 
     try:
+        raw_text = normalize_resume_text(extract_text_from_pdf_bytes(file_bytes))
         file_path, _stored_name = save_resume_bytes(file_bytes, filename)
-        raw_text = normalize_resume_text(extract_text_from_pdf(file_path))
+        del file_bytes
+        gc.collect()
 
         resume = Resume(
             filename=filename,
@@ -298,6 +305,8 @@ def upload_and_parse(
         client_ip=client_ip,
         file_hash=file_hash,
     )
+    del file_bytes
+    gc.collect()
     profile = parse_resume_profile(db, resume.id)
     return resume, profile
 
