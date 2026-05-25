@@ -11,15 +11,12 @@ import {
 import { deriveLiveJobRationale } from "@/lib/liveJobRationale";
 import type { ExternalJobItem } from "@/lib/api";
 
-export const liveJobCardVariants = {
-  hidden: { opacity: 0, y: 24 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.45,
-      ease: [0.22, 1, 0.36, 1] as const,
-    },
+const liveJobCardMotion = {
+  initial: { opacity: 0, y: 24 },
+  animate: { opacity: 1, y: 0 },
+  transition: {
+    duration: 0.45,
+    ease: [0.22, 1, 0.36, 1] as const,
   },
 };
 
@@ -53,20 +50,23 @@ export default function LiveJobCard({
   savedJobId,
   onSave,
 }: LiveJobCardProps) {
+  const description = job.description ?? "";
   const descriptionToShow = isExpanded
-    ? job.description
-    : truncateText(job.description);
+    ? description
+    : truncateText(description);
 
   const rationale = deriveLiveJobRationale({
     keyword,
-    title: job.title,
-    description: job.description,
+    title: job.title ?? "",
+    description,
     profileHints,
   });
 
   return (
     <motion.article
-      variants={liveJobCardVariants}
+      initial={liveJobCardMotion.initial}
+      animate={liveJobCardMotion.animate}
+      transition={liveJobCardMotion.transition}
       className="group rounded-[2rem] border border-white/10 bg-[#111827] p-6 shadow-lg shadow-black/10 transition-all duration-300 hover:border-blue-500/30 hover:shadow-[0_0_20px_rgba(59,130,246,0.15)]"
     >
       <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -155,7 +155,7 @@ export default function LiveJobCard({
 
         <p className="leading-7 text-slate-300">{descriptionToShow}</p>
 
-        {job.description.length > 260 && (
+        {description.length > 260 && (
           <button
             type="button"
             onClick={() => onToggleExpanded(index)}

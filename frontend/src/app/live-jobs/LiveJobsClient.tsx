@@ -1,23 +1,21 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { Search } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Skeleton, SkeletonCard } from "@/components/Skeleton";
 import LiveJobsSearchForm from "@/components/LiveJobsSearchForm";
 import LiveJobCard from "@/components/LiveJobCard";
+import type { ExternalJobItem } from "@/lib/api";
 import { PRESET_SEARCHES, useLiveJobs } from "@/hooks/useLiveJobs";
 
-const liveJobListVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
+function getLiveJobCardKey(job: ExternalJobItem, index: number) {
+  const sourceId = job.source_id?.trim();
+  if (sourceId) {
+    return `${job.source}-${sourceId}`;
+  }
+  return `${job.source}-row-${index}`;
+}
 
 export default function LiveJobsClient() {
   const {
@@ -193,20 +191,14 @@ export default function LiveJobsClient() {
               </div>
             </div>
           ) : (
-            <motion.div
-              className="space-y-6"
-              variants={liveJobListVariants}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-50px" }}
-            >
+            <div className="space-y-6">
               {results.map((job, index) => {
                 const saveKey = getSaveKey(job, index);
                 const savedJobId = savedJobIds[saveKey];
 
                 return (
                   <LiveJobCard
-                    key={`${job.source_id}-${index}`}
+                    key={getLiveJobCardKey(job, index)}
                     job={job}
                     index={index}
                     keyword={keyword}
@@ -233,7 +225,7 @@ export default function LiveJobsClient() {
                   </button>
                 </div>
               )}
-            </motion.div>
+            </div>
           )}
         </div>
       </main>

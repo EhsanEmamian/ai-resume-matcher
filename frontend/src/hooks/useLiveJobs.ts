@@ -118,11 +118,30 @@ export function useLiveJobs() {
         page: pageToFetch,
       });
 
-      setResults((prev) =>
-        append ? [...prev, ...data.items] : data.items
-      );
+      const incoming = Array.isArray(data.items) ? data.items : [];
+
+      setResults((prev) => {
+        if (!append) {
+          return incoming;
+        }
+
+        const seen = new Set(
+          prev.map((job) => `${job.source}:${job.source_id ?? ""}`)
+        );
+
+        const uniqueIncoming = incoming.filter((job) => {
+          const dedupeKey = `${job.source}:${job.source_id ?? ""}`;
+          if (seen.has(dedupeKey)) {
+            return false;
+          }
+          seen.add(dedupeKey);
+          return true;
+        });
+
+        return [...prev, ...uniqueIncoming];
+      });
       setPage(pageToFetch);
-      setHasMoreResults(data.items.length >= LIVE_JOBS_PAGE_SIZE);
+      setHasMoreResults(incoming.length >= LIVE_JOBS_PAGE_SIZE);
       setSearched(true);
 
       return data;
