@@ -27,6 +27,28 @@ DEFAULT_BROWSE_KEYWORD = "software"
 # ── Remotive API ───────────────────────────────────────────────────────────────
 REMOTIVE_API_URL = "https://remotive.com/api/remote-jobs"
 REMOTIVE_TIMEOUT = 15.0
+REMOTIVE_GLOBAL_LOCATION_KEYWORDS = ("worldwide", "global", "anywhere")
+REMOTIVE_COUNTRY_LABELS: dict[str, str] = {
+    "at": "Austria",
+    "de": "Germany",
+    "gb": "United Kingdom",
+    "us": "United States",
+}
+REMOTIVE_COUNTRY_ALIASES: dict[str, tuple[str, ...]] = {
+    "at": ("austria", "österreich", "osterreich", "at"),
+    "de": ("germany", "deutschland", "de"),
+    "gb": (
+        "united kingdom",
+        "great britain",
+        "england",
+        "scotland",
+        "wales",
+        "northern ireland",
+        "uk",
+        "gb",
+    ),
+    "us": ("united states", "usa", "u.s.", "u.s.a.", "america", "us"),
+}
 
 
 def _strip_html(html: str) -> str:
@@ -41,6 +63,75 @@ def _strip_html(html: str) -> str:
 
 
 # ── Keyword normalisation ──────────────────────────────────────────────────────
+
+def _remotive_country_aliases(country_code: str) -> tuple[str, ...]:
+    code = (country_code or "").strip().lower()
+    if not code:
+        return ()
+    return REMOTIVE_COUNTRY_ALIASES.get(code, (code,))
+
+
+def _build_remotive_search_query(
+    keyword: str,
+    *,
+    location: str = "",
+    country: str = "",
+) -> str:
+    """Build Remotive `search` text; API has no city/country params."""
+    parts: list[str] = []
+    cleaned_keyword = normalize_live_search_keyword(keyword)
+    if cleaned_keyword:
+        parts.append(cleaned_keyword)
+
+    city = (location or "").strip()
+    if city:
+        parts.append(city)
+
+    country_code = (country or "").strip().lower()
+    country_label = REMOTIVE_COUNTRY_LABELS.get(country_code, "")
+    if country_label:
+        if not any(part.lower() == country_label.lower() for part in parts):
+            parts.append(country_label)
+    elif country_code and country_code not in {part.lower() for part in parts}:
+        parts.append(country_code)
+
+    return " ".join(parts)
+
+
+def _remotive_location_haystack(item: dict[str, Any]) -> str:
+    raw = item.get("candidate_required_location") or item.get("location") or ""
+    return str(raw).strip().lower()
+
+
+def _remotive_job_matches_location_filters(
+    item: dict[str, Any],
+    *,
+    location: str = "",
+    country: str = "",
+) -> bool:
+    city = (location or "").strip().lower()
+    country_code = (country or "").strip().lower()
+
+    if not city and not country_code:
+        return True
+
+    haystack = _remotive_location_haystack(item)
+    if not haystack:
+        return False
+
+    if any(keyword in haystack for keyword in REMOTIVE_GLOBAL_LOCATION_KEYWORDS):
+        return True
+
+    if city and city in haystack:
+        return True
+
+    if country_code:
+        for alias in _remotive_country_aliases(country_code):
+            if alias in haystack:
+                return True
+
+    return False
+
 
 def _parse_remotive_posted_at(value: str | None) -> datetime | None:
     if not value:
@@ -112,11 +203,31 @@ def _normalize_remotive_job(item: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def fetch_remotive_jobs(keyword: str, limit: int = 20) -> list[dict]:
+def fetch_remotive_jobs(
+    keyword: str,
+    limit: int = 20,
+    *,
+    location: str = "",
+    country: str = "",
+) -> list[dict]:
     """Fetch jobs from Remotive API and map them to ExternalJobRead."""
-    params: dict[str, str | int] = {"limit": limit}
-    if keyword:
-        params["search"] = keyword
+    city_filter = (location or "").strip()
+    country_filter = (country or "").strip().lower()
+    has_location_filter = bool(city_filter or country_filter)
+
+    search_query = _build_remotive_search_query(
+        keyword,
+        location=location,
+        country=country,
+    )
+
+    api_limit = limit
+    if has_location_filter:
+        api_limit = min(50, max(limit * 3, limit))
+
+    params: dict[str, str | int] = {"limit": api_limit}
+    if search_query:
+        params["search"] = search_query
 
     try:
         with httpx.Client(timeout=REMOTIVE_TIMEOUT) as client:
@@ -137,10 +248,19 @@ def fetch_remotive_jobs(keyword: str, limit: int = 20) -> list[dict]:
         logger.error("Failed to fetch from Remotive: %s", exc)
         return []
 
-    jobs = []
-    for item in data.get("jobs", [])[:limit]:
-        if isinstance(item, dict):
-            jobs.append(_normalize_remotive_job(item))
+    jobs: list[dict] = []
+    for item in data.get("jobs", []):
+        if not isinstance(item, dict):
+            continue
+        if not _remotive_job_matches_location_filters(
+            item,
+            location=location,
+            country=country,
+        ):
+            continue
+        jobs.append(_normalize_remotive_job(item))
+        if len(jobs) >= limit:
+            break
     return jobs
 
 

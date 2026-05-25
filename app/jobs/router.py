@@ -138,6 +138,8 @@ def search_external_jobs(
         jobs = service.fetch_remotive_jobs(
             keyword=payload.keyword or "",
             limit=payload.max_results,
+            location=payload.location,
+            country=payload.country,
         )
     else:
         client = get_job_client(payload.source)
