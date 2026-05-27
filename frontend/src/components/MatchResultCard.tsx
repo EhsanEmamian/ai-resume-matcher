@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { BriefcaseBusiness, ChevronDown, MapPin } from "lucide-react";
+import { BriefcaseBusiness, Check, ChevronDown, MapPin, X } from "lucide-react";
 import { motion } from "framer-motion";
 import AnimatedCircularProgress from "@/components/AnimatedCircularProgress";
 import type { MatchItem } from "@/lib/api";
@@ -74,19 +74,24 @@ function truncateSkillList(skills: string[]) {
 
 function SkillChip({
   skill,
-  matched = false,
+  tone = "neutral",
 }: {
   skill: string;
-  matched?: boolean;
+  tone?: "matched" | "missing" | "neutral";
 }) {
+  const toneClass =
+    tone === "matched"
+      ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400 hover:border-emerald-400/35 hover:bg-emerald-500/15 hover:shadow-[0_0_14px_rgba(16,185,129,0.2)]"
+      : tone === "missing"
+        ? "border-slate-700/50 bg-slate-800/50 text-slate-500 hover:border-slate-500/45 hover:bg-slate-700/45 hover:text-slate-400 hover:shadow-[0_0_10px_rgba(100,116,139,0.16)]"
+        : "border-white/10 bg-[#111827] text-slate-300";
+
   return (
     <span
-      className={`inline-flex rounded-full px-2.5 py-1 font-mono text-[11px] ${
-        matched
-          ? "border border-emerald-400/20 bg-emerald-500/10 text-emerald-300"
-          : "border border-white/10 bg-[#111827] text-slate-300"
-      }`}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[11px] transition-all duration-150 ease-out ${toneClass}`}
     >
+      {tone === "matched" && <Check size={12} aria-hidden="true" />}
+      {tone === "missing" && <X size={12} aria-hidden="true" />}
       {skill}
     </span>
   );
@@ -135,6 +140,7 @@ export default function MatchResultCard({ match }: MatchResultCardProps) {
     match.matched_skills?.length
       ? match.matched_skills
       : breakdown?.matched_skills ?? [];
+  const missingSkills = breakdown?.missing_skills ?? [];
   const requiredSkills = match.job.required_skills ?? [];
   const { visible: visibleRequiredSkills, overflowCount: requiredOverflow } =
     truncateSkillList(requiredSkills);
@@ -171,19 +177,35 @@ export default function MatchResultCard({ match }: MatchResultCardProps) {
             </span>
           </div>
 
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Matched skills
-            </p>
-            {matchedSkills.length ? (
-              <div className="flex flex-wrap gap-2">
-                {matchedSkills.map((skill) => (
-                  <SkillChip key={skill} skill={skill} matched />
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-slate-500">No direct skill overlap</p>
-            )}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                You Have
+              </p>
+              {matchedSkills.length ? (
+                <div className="flex flex-wrap gap-2">
+                  {matchedSkills.map((skill) => (
+                    <SkillChip key={`matched-${skill}`} skill={skill} tone="matched" />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-500">No direct skill overlap</p>
+              )}
+            </div>
+            <div>
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                Missing
+              </p>
+              {missingSkills.length ? (
+                <div className="flex flex-wrap gap-2">
+                  {missingSkills.map((skill) => (
+                    <SkillChip key={`missing-${skill}`} skill={skill} tone="missing" />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-500">No notable skill gaps</p>
+              )}
+            </div>
           </div>
 
           {requiredSkills.length > 0 && (
@@ -193,7 +215,7 @@ export default function MatchResultCard({ match }: MatchResultCardProps) {
               </p>
               <div className="flex flex-wrap gap-2">
                 {visibleRequiredSkills.map((skill) => (
-                  <SkillChip key={skill} skill={skill} />
+                  <SkillChip key={skill} skill={skill} tone="neutral" />
                 ))}
                 {requiredOverflow > 0 && (
                   <span className="inline-flex rounded-full border border-white/10 bg-[#0f172a] px-2.5 py-1 font-mono text-[11px] text-slate-400">
@@ -277,12 +299,12 @@ export default function MatchResultCard({ match }: MatchResultCardProps) {
 
               {breakdown.missing_skills.length > 0 && (
                 <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-4">
-                  <p className="mb-2 text-sm font-semibold text-slate-200">
-                    Missing skills
+                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    Missing
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {breakdown.missing_skills.map((skill) => (
-                      <SkillChip key={skill} skill={skill} />
+                      <SkillChip key={`breakdown-missing-${skill}`} skill={skill} tone="missing" />
                     ))}
                   </div>
                 </div>
