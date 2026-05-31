@@ -219,43 +219,102 @@ def extract_experience_requirement_from_text(
     return None
 
 
+MAX_SALARY_LENGTH = 120
+
+_SALARY_KEYWORDS = (
+    r"(?:mindest)?gehalt|lohn|vergütung|entlohnung|entgelt|"
+    r"salary|compensation|remuneration|pay"
+)
+
+_CURRENCY = r"(?:EUR|€|CHF|GBP|£|\$|USD|SEK|NOK)"
+
+_MONEY_NUMBER = r"\d{1,3}(?:[.,]\d{3})*(?:[.,][\d\-]{2})?"
+
+_PER_UNIT = r"(?:/|\s+(?:per|pro)\s+)?(?:Monat|Jahr|Stunde|month|year|hour|p\.a\.|pa)"
+
+_SALARY_PATTERNS: list[re.Pattern[str]] = [
+    re.compile(
+        rf"""
+        {_CURRENCY}
+        \s*
+        {_MONEY_NUMBER}
+        (?:\s*[-–]+\s*{_MONEY_NUMBER})?
+        [^\n]{{0,40}}
+        """,
+        re.VERBOSE | re.IGNORECASE,
+    ),
+    re.compile(
+        rf"""
+        {_MONEY_NUMBER}
+        \s*
+        {_CURRENCY}
+        [^\n]{{0,40}}
+        """,
+        re.VERBOSE | re.IGNORECASE,
+    ),
+    re.compile(
+        rf"""
+        (?:{_SALARY_KEYWORDS})
+        [^\n]{{0,80}}
+        {_CURRENCY}
+        \s*
+        {_MONEY_NUMBER}
+        [^\n]{{0,40}}
+        """,
+        re.VERBOSE | re.IGNORECASE,
+    ),
+    re.compile(
+        rf"""
+        (?:{_SALARY_KEYWORDS})
+        \s*[:\-–]?\s*
+        {_CURRENCY}?\s*
+        {_MONEY_NUMBER}
+        (?:\s*[-–]+\s*{_CURRENCY}?\s*{_MONEY_NUMBER})?
+        (?:\s*{_PER_UNIT})?
+        """,
+        re.VERBOSE | re.IGNORECASE,
+    ),
+]
+
+
 def extract_salary_text_from_text(title: str, description: str) -> str | None:
+    """
+    Extract a salary snippet from a job description.
+    Returns a short, clean string or None — never more than MAX_SALARY_LENGTH chars.
+    """
     text = _normalize_text(title, description)
-    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    if not text.strip():
+        return None
 
-    salary_patterns = [
-        r"€\s?\d[\d\.\,]*",
-        r"\d[\d\.\,]*\s?€",
-        r"\$\s?\d[\d\.\,]*",     # دلار (آمریکا/کانادا)
-        r"£\s?\d[\d\.\,]*",     # پوند (انگلیس)
-        r"\b\d{2,3}k\b",        # فرمت‌های رایج مثل 80k یا 120k
-        r"\beur\b",
-        r"\busd\b",
-        r"\bgbp\b",
-        r"\bbrutto\b",
-        r"\bmonatlich\b",
-        r"\bjährlich\b",
-        r"\bp\.a\.\b",
-        r"\bgehalt\b",
-        r"\bbruttogehalt\b",
-        r"\bbruttomonatsgehalt\b",
-        r"\bjahresbrutto\b",
-        r"\bkollektivvertrag\b",
-        r"\bkv-minimum\b",
-        r"\bverhandlungsbasis\b",
-        r"\b(?:annual\s+)?salary\b",  # حقوق سالانه انگلیسی
-        r"\bper\s+year\b",            # سالانه انگلیسی
-    ]
+    for pattern in _SALARY_PATTERNS:
+        match = pattern.search(text)
+        if match:
+            raw = match.group(0).strip()
 
-    for line in lines:
-        lowered = line.lower()
-        if any(
-            re.search(pattern, lowered, flags=re.IGNORECASE)
-            for pattern in salary_patterns
-        ):
-            return line
+            if len(raw) > MAX_SALARY_LENGTH:
+                raw = raw[:MAX_SALARY_LENGTH].rstrip()
+
+            if not re.search(r"\d", raw):
+                continue
+
+            return raw
 
     return None
+
+
+def normalize_salary_text_for_storage(salary: str | None) -> str | None:
+    """Hard-cap salary text before persisting to the database."""
+    if not salary:
+        return None
+
+    capped = salary.strip()
+    if len(capped) > MAX_SALARY_LENGTH:
+        capped = capped[:MAX_SALARY_LENGTH].rstrip()
+
+    if not capped or not re.search(r"\d", capped):
+        return None
+
+    return capped
 
 
 def extract_skills_from_text(title: str, description: str) -> list[str]:

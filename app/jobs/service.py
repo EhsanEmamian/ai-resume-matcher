@@ -17,6 +17,7 @@ from app.jobs.skill_extractor import (
     extract_languages_from_text,
     extract_salary_text_from_text,
     extract_skills_from_text,
+    normalize_salary_text_for_storage,
 )
 
 logger = logging.getLogger(__name__)
@@ -300,7 +301,7 @@ def create_job(db: Session, payload: JobPostingCreate) -> JobPosting:
         required_skills=payload.required_skills,
         required_languages=payload.required_languages,
         experience_requirement=payload.experience_requirement,
-        salary_text=payload.salary_text,
+        salary_text=normalize_salary_text_for_storage(payload.salary_text),
         location=payload.location,
         remote=payload.remote,
         posted_at=payload.posted_at,
@@ -337,6 +338,11 @@ def _prepare_immediate_import_payload(payload: dict) -> dict:
     if not immediate.get("enrichment_status"):
         immediate["enrichment_status"] = (
             "processing" if immediate.get("source_url") else "pending"
+        )
+
+    if immediate.get("salary_text"):
+        immediate["salary_text"] = normalize_salary_text_for_storage(
+            immediate["salary_text"]
         )
 
     return immediate
@@ -456,7 +462,7 @@ def _enrich_job_background(db: Session, job_id: uuid.UUID, payload: dict) -> Non
         job.experience_requirement = extracted_experience
 
     if not payload.get("salary_text") and extracted_salary_text:
-        job.salary_text = extracted_salary_text
+        job.salary_text = normalize_salary_text_for_storage(extracted_salary_text)
 
     db.commit()
 

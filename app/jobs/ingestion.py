@@ -6,7 +6,10 @@ from sqlalchemy.orm import Session
 
 from app.jobs.adzuna_client import fetch_jobs
 from app.jobs.models import JobPosting
-from app.jobs.skill_extractor import extract_skills_from_text
+from app.jobs.skill_extractor import (
+    extract_skills_from_text,
+    normalize_salary_text_for_storage,
+)
 
 
 @dataclass
@@ -60,6 +63,11 @@ def ingest_adzuna_jobs(
                 job_data["required_skills"] = extract_skills_from_text(
                     title=job_data.get("title", ""),
                     description=job_data.get("description", ""),
+                )
+
+            if job_data.get("salary_text"):
+                job_data["salary_text"] = normalize_salary_text_for_storage(
+                    job_data["salary_text"]
                 )
 
             job = JobPosting(**job_data)

@@ -8,7 +8,12 @@ from __future__ import annotations
 
 import pytest
 
-from app.jobs.skill_extractor import extract_experience_requirement_from_text
+from app.jobs.skill_extractor import (
+    MAX_SALARY_LENGTH,
+    extract_experience_requirement_from_text,
+    extract_salary_text_from_text,
+    normalize_salary_text_for_storage,
+)
 
 
 @pytest.mark.parametrize(
@@ -198,3 +203,60 @@ def test_extract_experience_german_phrase_fallbacks(
 def test_extract_experience_empty_inputs_return_none() -> None:
     """No title signals and empty description should not invent a requirement."""
     assert extract_experience_requirement_from_text("", "") is None
+
+
+@pytest.mark.parametrize(
+    ("description", "expected_fragment"),
+    [
+        (
+            "Für diese Position ist ein Mindestgehalt von EUR 4.300,-- brutto/Monat "
+            "bei Vollzeitbeschäftigung vorgesehen. Weitere Informationen folgen...",
+            "EUR 4.300,-- brutto/Monat",
+        ),
+        (
+            "Salary: £45,000 – £55,000 per year depending on experience.",
+            "Salary: £45,000 – £55,000 per year",
+        ),
+        (
+            "€60.000 - €80.000 EUR pro Jahr, 30 Tage Urlaub",
+            "€60.000 - €80.000 EUR pro Jahr",
+        ),
+    ],
+    ids=["german-mindestgehalt", "english-range", "german-range"],
+)
+def test_extract_salary_text_bounded_patterns(
+    description: str,
+    expected_fragment: str,
+) -> None:
+    result = extract_salary_text_from_text("", description)
+
+    assert result is not None
+    assert expected_fragment in result
+    assert len(result) <= MAX_SALARY_LENGTH
+
+
+def test_extract_salary_text_returns_none_without_salary_info() -> None:
+    description = "We are looking for a motivated Python developer to join our team."
+
+    assert extract_salary_text_from_text("", description) is None
+
+
+def test_extract_salary_text_caps_adversarial_long_match() -> None:
+    description = "EUR 5000 " + "x" * 200 + " brutto"
+
+    result = extract_salary_text_from_text("", description)
+
+    assert result is not None
+    assert "EUR 5000" in result
+    assert len(result) <= MAX_SALARY_LENGTH
+
+
+def test_normalize_salary_text_for_storage_caps_and_rejects_invalid() -> None:
+    assert normalize_salary_text_for_storage("EUR 4.300 brutto/Monat") == (
+        "EUR 4.300 brutto/Monat"
+    )
+    assert len(normalize_salary_text_for_storage("EUR 5000 " + "x" * 200) or "") == (
+        MAX_SALARY_LENGTH
+    )
+    assert normalize_salary_text_for_storage("no digits here") is None
+    assert normalize_salary_text_for_storage(None) is None
