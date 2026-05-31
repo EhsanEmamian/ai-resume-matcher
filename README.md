@@ -318,7 +318,7 @@ curl -X POST http://localhost:8000/jobs/search-external \
 docker compose run --rm api pytest
 ```
 
-Tests cover: health check, job CRUD, resume upload, validation pipeline, matching logic, and deduplication behaviour.
+Tests cover: health check, job CRUD, resume upload, validation pipeline, matching logic, and deduplication behaviour
 
 ---
 
