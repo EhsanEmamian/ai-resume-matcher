@@ -6,6 +6,8 @@ from dataclasses import dataclass
 import httpx
 from bs4 import BeautifulSoup, Tag
 
+from app.jobs.url_extractor import DEFAULT_HEADERS, DEFAULT_TIMEOUT, resolve_redirect_url
+
 
 class SourceEnrichmentError(Exception):
     pass
@@ -26,6 +28,17 @@ NOISY_TAG_NAMES = frozenset(
     {"nav", "header", "footer", "aside", "script", "style", "noscript"}
 )
 NOISY_CLASS_ID_PATTERN = re.compile(r"(menu|nav|footer)", re.IGNORECASE)
+
+REDIRECT_INTERSTITIAL_INDICATORS = (
+    "weitergeleitet",
+    "redirected",
+    "redirect",
+    "see the ad here",
+    "see the listing here",
+    "you will now be redirected",
+    "adzuna-jobsuche",
+    "myability",
+)
 
 
 def _element_has_noisy_class_or_id(tag: Tag) -> bool:
@@ -65,82 +78,52 @@ def _strip_html(html: str) -> str:
     return _normalize_extracted_text(text)
 
 
-def fetch_source_text_result(url: str) -> SourceEnrichmentResult:
-    if not url:
-        return SourceEnrichmentResult(
-            status="not_attempted",
-            text=None,
-            failure_reason="no_url",
-            error=None,
-        )
+def _redirect_interstitial_result(
+    *,
+    error: str,
+    raw_html_length: int | None = None,
+    text_word_count: int | None = None,
+    text_preview: str | None = None,
+) -> SourceEnrichmentResult:
+    return SourceEnrichmentResult(
+        status="failed",
+        text=None,
+        failure_reason="redirect_interstitial",
+        error=error,
+        raw_html_length=raw_html_length,
+        text_word_count=text_word_count,
+        text_preview=text_preview,
+    )
 
+
+def _fetch_html(url: str) -> tuple[str | None, str | None]:
     try:
         response = httpx.get(
             url,
-            timeout=15.0,
+            timeout=DEFAULT_TIMEOUT,
             follow_redirects=True,
-            headers={
-                "User-Agent": (
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/124.0.0.0 Safari/537.36"
-                ),
-                "Accept": (
-                    "text/html,application/xhtml+xml,application/xml;"
-                    "q=0.9,image/avif,image/webp,*/*;q=0.8"
-                ),
-                "Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
-            },
+            headers=DEFAULT_HEADERS,
         )
     except httpx.TimeoutException as exc:
-        return SourceEnrichmentResult(
-            status="failed",
-            text=None,
-            failure_reason="timeout",
-            error=str(exc),
-        )
+        return None, f"timeout:{exc}"
     except Exception as exc:
-        return SourceEnrichmentResult(
-            status="failed",
-            text=None,
-            failure_reason="fetch_failed",
-            error=str(exc),
-        )
+        return None, f"fetch_failed:{exc}"
 
     if response.status_code in {401, 403}:
-        return SourceEnrichmentResult(
-            status="failed",
-            text=None,
-            failure_reason="blocked",
-            error=f"HTTP {response.status_code}",
-        )
+        return None, f"blocked:HTTP {response.status_code}"
 
     if response.status_code >= 400:
-        return SourceEnrichmentResult(
-            status="failed",
-            text=None,
-            failure_reason="fetch_failed",
-            error=f"HTTP {response.status_code}",
-        )
+        return None, f"fetch_failed:HTTP {response.status_code}"
 
-    raw_html = response.text or ""
+    return response.text or "", None
+
+
+def _evaluate_html(raw_html: str) -> SourceEnrichmentResult:
     stripped = _strip_html(raw_html)
-
     raw_html_length = len(raw_html)
     text_word_count = len(stripped.split())
     text_preview = stripped[:300] if stripped else None
-
     lowered_preview = (text_preview or "").lower()
-    redirect_indicators = [
-        "weitergeleitet",
-        "redirected",
-        "redirect",
-        "see the ad here",
-        "see the listing here",
-        "you will now be redirected",
-        "adzuna-jobsuche",
-        "myability",
-    ]
 
     if raw_html_length < 500:
         return SourceEnrichmentResult(
@@ -153,11 +136,8 @@ def fetch_source_text_result(url: str) -> SourceEnrichmentResult:
             text_preview=text_preview,
         )
 
-    if any(indicator in lowered_preview for indicator in redirect_indicators):
-        return SourceEnrichmentResult(
-            status="failed",
-            text=None,
-            failure_reason="redirect_interstitial",
+    if any(indicator in lowered_preview for indicator in REDIRECT_INTERSTITIAL_INDICATORS):
+        return _redirect_interstitial_result(
             error="Source URL resolved to an intermediate redirect/interstitial page",
             raw_html_length=raw_html_length,
             text_word_count=text_word_count,
@@ -204,3 +184,64 @@ def fetch_source_text_result(url: str) -> SourceEnrichmentResult:
         text_word_count=text_word_count,
         text_preview=text_preview,
     )
+
+
+def fetch_source_text_result(url: str) -> SourceEnrichmentResult:
+    if not url:
+        return SourceEnrichmentResult(
+            status="not_attempted",
+            text=None,
+            failure_reason="no_url",
+            error=None,
+        )
+
+    final_url, resolve_status = resolve_redirect_url(url)
+
+    if resolve_status == "interstitial_unresolved":
+        return _redirect_interstitial_result(
+            error="Could not extract destination URL from redirect interstitial page",
+        )
+
+    if resolve_status == "timeout":
+        return SourceEnrichmentResult(
+            status="failed",
+            text=None,
+            failure_reason="timeout",
+            error="Timed out while resolving source URL",
+        )
+
+    if resolve_status == "blocked":
+        return SourceEnrichmentResult(
+            status="failed",
+            text=None,
+            failure_reason="blocked",
+            error="Blocked while resolving source URL",
+        )
+
+    if resolve_status == "fetch_failed":
+        return SourceEnrichmentResult(
+            status="failed",
+            text=None,
+            failure_reason="fetch_failed",
+            error="Failed to resolve source URL",
+        )
+
+    raw_html, fetch_error = _fetch_html(final_url)
+    if fetch_error:
+        if resolve_status == "resolved":
+            return _redirect_interstitial_result(
+                error=(
+                    "Extracted redirect target but failed to fetch final page; "
+                    f"{fetch_error.split(':', 1)[0]}"
+                ),
+            )
+
+        failure_reason = fetch_error.split(":", 1)[0]
+        return SourceEnrichmentResult(
+            status="failed",
+            text=None,
+            failure_reason=failure_reason,
+            error=fetch_error.split(":", 1)[-1],
+        )
+
+    return _evaluate_html(raw_html or "")
