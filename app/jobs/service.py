@@ -398,7 +398,11 @@ def _enrich_job_background(db: Session, job_id: uuid.UUID, payload: dict) -> Non
     enrichment_result = None
 
     if source_url:
-        enrichment_result = fetch_source_text_result(source_url)
+        enrichment_result = fetch_source_text_result(
+            source_url,
+            source=payload.get("source", job.source) or "unknown",
+            source_id=payload.get("source_id", job.source_id),
+        )
         if enrichment_result.failure_reason == "redirect_interstitial":
             source_text = description
             enrichment_status = "success"

@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass
 
 import httpx
 from bs4 import BeautifulSoup, Tag
 
+from app.jobs.adzuna_native_fetcher import fetch_adzuna_native_description
 from app.jobs.url_extractor import DEFAULT_HEADERS, DEFAULT_TIMEOUT, resolve_redirect_url
+
+logger = logging.getLogger(__name__)
 
 
 class SourceEnrichmentError(Exception):
@@ -186,16 +190,22 @@ def _evaluate_html(raw_html: str) -> SourceEnrichmentResult:
     )
 
 
-def fetch_source_text_result(url: str) -> SourceEnrichmentResult:
-    if not url:
-        return SourceEnrichmentResult(
-            status="not_attempted",
-            text=None,
-            failure_reason="no_url",
-            error=None,
-        )
+def _success_from_plain_text(text: str) -> SourceEnrichmentResult:
+    normalized = _normalize_extracted_text(text)
+    word_count = len(normalized.split())
+    return SourceEnrichmentResult(
+        status="success",
+        text=normalized,
+        failure_reason=None,
+        error=None,
+        raw_html_length=len(text),
+        text_word_count=word_count,
+        text_preview=normalized[:300] if normalized else None,
+    )
 
-    final_url, resolve_status = resolve_redirect_url(url)
+
+def _generic_fetch_and_extract(source_url: str) -> SourceEnrichmentResult:
+    final_url, resolve_status = resolve_redirect_url(source_url)
 
     if resolve_status == "interstitial_unresolved":
         return _redirect_interstitial_result(
@@ -245,3 +255,34 @@ def fetch_source_text_result(url: str) -> SourceEnrichmentResult:
         )
 
     return _evaluate_html(raw_html or "")
+
+
+def fetch_source_text_result(
+    url: str,
+    *,
+    source: str = "unknown",
+    source_id: str | None = None,
+) -> SourceEnrichmentResult:
+    if not url:
+        return SourceEnrichmentResult(
+            status="not_attempted",
+            text=None,
+            failure_reason="no_url",
+            error=None,
+        )
+
+    if source == "adzuna" and source_id:
+        description, native_status = fetch_adzuna_native_description(
+            job_id=source_id,
+            redirect_url=url,
+        )
+        if native_status == "success" and description:
+            return _success_from_plain_text(description)
+
+        logger.info(
+            "Adzuna native fetch returned '%s' for job %s — falling back",
+            native_status,
+            source_id,
+        )
+
+    return _generic_fetch_and_extract(url)
