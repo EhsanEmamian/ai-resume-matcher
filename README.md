@@ -324,7 +324,7 @@ Tests cover: health check, job CRUD, resume upload, validation pipeline, matchin
 
 ## Author
 
-Built by **Ehsan Emamian** — Vienna-based backend developer specialising in Python, FastAPI, PostgreSQL, and AI integration.
+Built by **Ehsan Emamian** — Vienna-based backend developer specialising in Python, FastAPI, PostgreSQL, and AI integration
 
 - GitHub: [@EhsanEmamian](https://github.com/EhsanEmamian)
 - LinkedIn: [Ehsan Emamian](https://linkedin.com/in/ehsan-emamian)
