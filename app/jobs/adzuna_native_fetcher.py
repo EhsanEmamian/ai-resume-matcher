@@ -30,6 +30,54 @@ _DESCRIPTION_SELECTORS = [
     {"id": re.compile(r"description", re.I)},
 ]
 
+_BOILERPLATE_CLASS_SUBSTRINGS = (
+    "header", "footer", "navbar", "nav-", "search-bar", "searchbar",
+    "cookie", "banner", "sidebar", "breadcrumb", "pagination",
+    "similar-jobs", "job-alert", "email-alert", "apply-btn", "apply-button",
+)
+
+_BOILERPLATE_TEXT_MATCHES = (
+    "Was?", "Wo?", "Suche", "Erweiterte Suche", "zurück zur letzten Suche",
+    "Auf diesen Job bewerben", "Jetzt ähnliche Jobs", "Job-E-Mail", "Ähnliche Jobs",
+)
+
+
+def _strip_ui_boilerplate(soup: BeautifulSoup) -> None:
+    """
+    Remove UI boilerplate elements from the soup before text extraction.
+    Modifies the soup in place.
+    """
+    # Remove specific tags
+    for tag_name in ["header", "footer", "nav", "aside", "form", "script", "style", "noscript"]:
+        for tag in soup.find_all(tag_name):
+            tag.decompose()
+
+    # Remove buttons
+    for button in soup.find_all("button"):
+        button.decompose()
+
+    # Remove elements with specific roles
+    for role in ["search", "banner", "navigation"]:
+        for elem in soup.find_all(attrs={"role": role}):
+            elem.decompose()
+
+    # Remove elements with boilerplate class substrings
+    for elem in soup.find_all(True):
+        class_attr = elem.get("class") or []
+        if isinstance(class_attr, list):
+            class_value = " ".join(str(c) for c in class_attr).lower()
+        else:
+            class_value = str(class_attr).lower()
+
+        if any(substring in class_value for substring in _BOILERPLATE_CLASS_SUBSTRINGS):
+            elem.decompose()
+
+    # Remove <a> and <div> elements with boilerplate text
+    for elem in soup.find_all(["a", "div"]):
+        text = elem.get_text(strip=True)
+        if any(text == match or text.startswith(match) for match in _BOILERPLATE_TEXT_MATCHES):
+            elem.decompose()
+
 
 def _build_native_url(redirect_url: str, job_id: str) -> str:
     """
@@ -47,6 +95,9 @@ def _build_native_url(redirect_url: str, job_id: str) -> str:
 
 def _extract_description_from_soup(soup: BeautifulSoup) -> str | None:
     """Try each selector in order; return the first substantial text block."""
+    # Strip UI boilerplate before text extraction
+    _strip_ui_boilerplate(soup)
+
     for selector in _DESCRIPTION_SELECTORS:
         element = soup.find(attrs=selector)
         if element:

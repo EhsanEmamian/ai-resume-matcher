@@ -31,7 +31,7 @@ export function useLiveJobs() {
   const [keyword, setKeyword] = useState("");
   const [location, setLocation] = useState("");
   const [country, setCountry] = useState("de");
-  const [source, setSource] = useState<JobSource>("arbeitnow");
+  const [source, setSource] = useState<JobSource>("adzuna");
   const [profileHints, setProfileHints] = useState<string[]>([]);
 
   const [page, setPage] = useState(1);
