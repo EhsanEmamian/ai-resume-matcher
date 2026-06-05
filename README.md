@@ -184,7 +184,7 @@ match_results
 The system validates whether an uploaded PDF is actually a resume before running the extraction prompt. This prevents hallucinated profiles from unrelated documents. A rule-based pre-check runs first (cheap), then the AI validation runs only if the pre-check passes (less cheap).
 
 **2. Neutral fallback for missing job metadata**
-When a job has no `required_languages`, no `experience_requirement`, or no inferable seniority, the affected scoring components return 50% of their maximum weight — neither a bonus nor a penalty. This reflects the real-world reality that missing data is not the same as a mismatch.
+When a job has no `required_languages`, no `experience_requirement`, or no inferable seniority, the affected scoring components return 50% of their maximum weight — neither a bonus nor a penalty. This reflects the real-world reality that missing data is not the same as a mismatch
 
 **3. File hash caching before rate limiting**
 The SHA-256 hash check runs before the IP rate limit check. A user re-uploading the same resume they already parsed gets an instant cached response and does not consume their daily quota — they're not using AI budget.
@@ -324,7 +324,7 @@ Tests cover: health check, job CRUD, resume upload, validation pipeline, matchin
 
 ## Author
 
-Built by **Ehsan Emamian** — Vienna-based backend developer specialising in Python, FastAPI, PostgreSQL, and AI integration.
+Built by **Ehsan Emamian** — Vienna-based backend developer specialising in Python, FastAPI, PostgreSQL, and AI integration
 
 - GitHub: [@EhsanEmamian](https://github.com/EhsanEmamian)
 - LinkedIn: [Ehsan Emamian](https://linkedin.com/in/ehsan-emamian)
