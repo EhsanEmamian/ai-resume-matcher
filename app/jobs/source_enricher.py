@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup, Tag
 
 from app.jobs.adzuna_native_fetcher import fetch_adzuna_native_description
 from app.jobs.url_extractor import DEFAULT_HEADERS, DEFAULT_TIMEOUT, resolve_redirect_url
+from app.jobs.zenrows_client import fetch_via_zenrows
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,12 @@ REDIRECT_INTERSTITIAL_INDICATORS = (
     "you will now be redirected",
     "adzuna-jobsuche",
     "myability",
+)
+
+BOT_WALL_MARKERS = (
+    "cloudflare",
+    "access denied",
+    "just a moment...",
 )
 
 
@@ -237,6 +244,32 @@ def _generic_fetch_and_extract(source_url: str) -> SourceEnrichmentResult:
         )
 
     raw_html, fetch_error = _fetch_html(final_url)
+    
+    # Check if we should try ZenRows fallback
+    should_try_zenrows = False
+    zenrows_reason = None
+    
+    if fetch_error:
+        # Check for 403 or 429 errors
+        if "blocked:HTTP 403" in fetch_error or "blocked:HTTP 429" in fetch_error:
+            should_try_zenrows = True
+            zenrows_reason = f"HTTP error: {fetch_error}"
+    elif raw_html:
+        # Check for bot-wall markers in successful response
+        lowered_html = raw_html.lower()
+        if any(marker in lowered_html for marker in BOT_WALL_MARKERS):
+            should_try_zenrows = True
+            zenrows_reason = "Bot wall detected in response"
+    
+    if should_try_zenrows:
+        logger.info(f"Attempting ZenRows fallback for {final_url}: {zenrows_reason}")
+        zenrows_html = fetch_via_zenrows(final_url)
+        if zenrows_html:
+            logger.info("ZenRows fallback successful, evaluating HTML")
+            return _evaluate_html(zenrows_html)
+        else:
+            logger.warning("ZenRows fallback failed, returning original error")
+    
     if fetch_error:
         if resolve_status == "resolved":
             return _redirect_interstitial_result(
