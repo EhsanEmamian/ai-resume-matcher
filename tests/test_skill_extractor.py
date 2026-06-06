@@ -260,3 +260,37 @@ def test_normalize_salary_text_for_storage_caps_and_rejects_invalid() -> None:
     )
     assert normalize_salary_text_for_storage("no digits here") is None
     assert normalize_salary_text_for_storage(None) is None
+
+
+def test_extract_salary_text_returns_string_under_120_chars() -> None:
+    """Test extract_salary_text_from_text returns a string under 120 chars."""
+    description = "Wir bieten ein attraktives Gehalt von EUR 4.300,-- brutto/Monat bei Vollzeit."
+    result = extract_salary_text_from_text("", description)
+    
+    assert result is not None
+    assert len(result) < 120
+    assert "EUR 4.300,-- brutto/Monat" in result
+
+
+def test_extract_salary_text_german_full_description() -> None:
+    """Test it correctly extracts 'EUR 4.300,-- brutto/Monat' from a full German job description without capturing the entire text."""
+    german_description = """
+    Wir suchen einen erfahrenen Softwareentwickler für unser Team in Wien.
+    Ihre Aufgaben umfassen die Entwicklung von Webanwendungen mit Python und Django,
+    Zusammenarbeit mit internationalen Teams und kontinuierliche Weiterentwicklung.
+    
+    Für diese Position ist ein Mindestgehalt von EUR 4.300,-- brutto/Monat
+    bei Vollzeitbeschäftigung vorgesehen. Je nach Qualifikation und Erfahrung
+    ist eine Überzahlung möglich.
+    
+    Wir bieten flexible Arbeitszeiten, Home-Office-Möglichkeiten und
+    ein modernes Arbeitsumfeld.
+    """
+    
+    result = extract_salary_text_from_text("Softwareentwickler", german_description)
+    
+    assert result is not None
+    assert "EUR 4.300,-- brutto/Monat" in result
+    # Ensure it doesn't capture the entire description
+    assert len(result) < len(german_description)
+    assert len(result) <= MAX_SALARY_LENGTH

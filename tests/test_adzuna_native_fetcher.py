@@ -4,6 +4,7 @@ from app.jobs.adzuna_native_fetcher import (
     fetch_adzuna_native_description,
 )
 from bs4 import BeautifulSoup
+import pytest
 
 
 def test_build_native_url_from_redirect_url() -> None:
@@ -54,6 +55,27 @@ def test_fetch_adzuna_native_description_fetch_failed(monkeypatch) -> None:
     monkeypatch.setattr(
         "app.jobs.adzuna_native_fetcher._fetch_without_js_redirect",
         lambda url, timeout: None,
+    )
+
+    text, status = fetch_adzuna_native_description(
+        "5022594430",
+        "https://www.adzuna.at/land/ad/5022594430?v=1",
+    )
+
+    assert text is None
+    assert status == "fetch_failed"
+
+
+def test_fetch_adzuna_native_description_timeout_both_urls(monkeypatch) -> None:
+    """Test returns 'fetch_failed' when both URLs time out."""
+    import httpx
+    
+    def mock_fetch_timeout(url, timeout):
+        raise httpx.TimeoutException("Request timed out")
+    
+    monkeypatch.setattr(
+        "app.jobs.adzuna_native_fetcher._fetch_without_js_redirect",
+        mock_fetch_timeout,
     )
 
     text, status = fetch_adzuna_native_description(
