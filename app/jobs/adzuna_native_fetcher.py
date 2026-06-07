@@ -5,7 +5,7 @@ import re
 from urllib.parse import urlparse
 
 import httpx
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 
 logger = logging.getLogger(__name__)
 
@@ -20,73 +20,109 @@ HEADERS = {
 }
 
 MIN_DESCRIPTION_WORDS = 80
+BOILERPLATE_TEXT_BUDGET = 50  # if element has more words than this, don't decompose it
 
+# Adzuna description selectors — ordered by reliability
 _DESCRIPTION_SELECTORS = [
     {"itemprop": "description"},
-    {"class": re.compile(r"job-desc", re.I)},
-    {"class": re.compile(r"advert", re.I)},
-    {"class": re.compile(r"listing", re.I)},
-    {"class": re.compile(r"job-detail", re.I)},
+    {"class": re.compile(r"\bjob-desc\b", re.I)},
+    {"class": re.compile(r"\badvert\b", re.I)},
+    {"class": re.compile(r"\blisting\b", re.I)},
+    {"class": re.compile(r"\bjob-detail\b", re.I)},
     {"id": re.compile(r"description", re.I)},
 ]
 
-_BOILERPLATE_CLASS_SUBSTRINGS = (
-    "header", "footer", "navbar", "nav-", "search-bar", "searchbar",
-    "cookie", "banner", "sidebar", "breadcrumb", "pagination",
-    "similar-jobs", "job-alert", "email-alert", "apply-btn", "apply-button",
-)
+# Tags that are NEVER part of a job description
+_SAFE_TO_REMOVE_TAGS = [
+    "header", "footer", "nav", "aside",
+    "script", "style", "noscript", "iframe",
+]
 
-_BOILERPLATE_TEXT_MATCHES = (
-    "Was?", "Wo?", "Suche", "Erweiterte Suche", "zurück zur letzten Suche",
-    "Auf diesen Job bewerben", "Jetzt ähnliche Jobs", "Job-E-Mail", "Ähnliche Jobs",
-)
+# Class substrings — only decompose if word count is below BOILERPLATE_TEXT_BUDGET
+_BOILERPLATE_CLASS_FRAGMENTS = [
+    "navbar", "nav-bar", "site-header", "site-footer",
+    "breadcrumb", "pagination", "cookie",
+    "search-bar", "searchbar", "search-widget",
+    "sidebar", "side-bar",
+    # ↓ These are the dangerous ones — must check word count before decomposing
+    "job-alert", "email-alert", "email-notification",
+    "apply-btn", "apply-button", "cta-button",
+    "similar-jobs", "related-jobs",
+    "social-share", "share-buttons",
+]
+
+# Exact-text triggers for small UI elements
+_BOILERPLATE_EXACT_TEXTS = frozenset({
+    "Was?", "Wo?", "Suche", "Erweiterte Suche",
+    "zurück zur letzten Suche", "Auf diesen Job bewerben",
+    "Jetzt ähnliche Jobs", "Job-E-Mail", "Ähnliche Jobs",
+    "E-Mail-Benachrichtigung erstellen",
+})
+
+
+def _word_count(element: Tag) -> int:
+    return len(element.get_text(strip=True).split())
 
 
 def _strip_ui_boilerplate(soup: BeautifulSoup) -> None:
     """
-    Remove UI boilerplate elements from the soup before text extraction.
-    Modifies the soup in place.
+    Remove UI noise from the soup tree in-place.
+    Critical safety rule: never decompose an element that contains
+    more than BOILERPLATE_TEXT_BUDGET words — it might be wrapping
+    real job description content.
     """
-    # Remove specific tags
-    for tag_name in ["header", "footer", "nav", "aside", "form", "script", "style", "noscript"]:
-        for tag in soup.find_all(tag_name):
-            tag.decompose()
+    # ── Pass 1: unconditionally safe tag removal ───────────────────────
+    for tag_name in _SAFE_TO_REMOVE_TAGS:
+        for el in soup.find_all(tag_name):
+            el.decompose()
 
-    # Remove buttons
-    for button in soup.find_all("button"):
-        button.decompose()
+    # ── Pass 2: role-based removal (small UI regions) ──────────────────
+    for role in ("search", "banner", "navigation", "complementary"):
+        for el in soup.find_all(attrs={"role": role}):
+            if _word_count(el) <= BOILERPLATE_TEXT_BUDGET:
+                el.decompose()
 
-    # Remove elements with specific roles
-    for role in ["search", "banner", "navigation"]:
-        for elem in soup.find_all(attrs={"role": role}):
-            elem.decompose()
+    # ── Pass 3: class-based removal WITH word count guard ─────────────
+    for el in soup.find_all(True):
+        if not el.name:
+            continue
+        
+        # Ensure class attribute is properly converted to a list of strings
+        class_attr = el.get("class", [])
+        if not isinstance(class_attr, list):
+            class_attr = [class_attr]
+            
+        classes = " ".join(str(c) for c in class_attr).lower()
+        el_id = str(el.get("id") or "").lower()
+        combined = f"{classes} {el_id}"
 
-    # Remove elements with boilerplate class substrings
-    for elem in soup.find_all(True):
-        class_attr = elem.get("class") or []
-        if isinstance(class_attr, list):
-            class_value = " ".join(str(c) for c in class_attr).lower()
-        else:
-            class_value = str(class_attr).lower()
+        for fragment in _BOILERPLATE_CLASS_FRAGMENTS:
+            if fragment in combined:
+                words = _word_count(el)
+                if words <= BOILERPLATE_TEXT_BUDGET:
+                    # Safe — small UI element, decompose it
+                    el.decompose()
+                else:
+                    # Dangerous — contains real content
+                    # Only remove the element's own text nodes,
+                    # not its children (preserve list items etc.)
+                    for child in list(el.children):
+                        if hasattr(child, "name") and child.name == "form":
+                            child.decompose()
+                        elif hasattr(child, "name") and child.name in ("button", "input"):
+                            child.decompose()
+                break  # matched one fragment — move to next element
 
-        if any(substring in class_value for substring in _BOILERPLATE_CLASS_SUBSTRINGS):
-            elem.decompose()
-
-    # Remove <a> and <div> elements with boilerplate text
-    for elem in soup.find_all(["a", "div"]):
-        text = elem.get_text(strip=True)
-        if any(text == match or text.startswith(match) for match in _BOILERPLATE_TEXT_MATCHES):
-            elem.decompose()
+    # ── Pass 4: exact-text button/link removal ────────────────────────
+    for el in soup.find_all(["a", "button", "span", "p"]):
+        text = el.get_text(strip=True)
+        if text in _BOILERPLATE_EXACT_TEXTS:
+            el.decompose()
 
 
 def _build_native_url(redirect_url: str, job_id: str) -> str:
     """
     Derive the Adzuna-native canonical URL from the redirect_url and job ID.
-
-    redirect_url is typically:
-        https://www.adzuna.at/land/ad/5022594430?v=1&adref=...
-    We reconstruct:
-        https://www.adzuna.at/details/5022594430
     """
     parsed = urlparse(redirect_url)
     base = f"{parsed.scheme}://{parsed.netloc}"
@@ -94,28 +130,60 @@ def _build_native_url(redirect_url: str, job_id: str) -> str:
 
 
 def _extract_description_from_soup(soup: BeautifulSoup) -> str | None:
-    """Try each selector in order; return the first substantial text block."""
-    # Strip UI boilerplate before text extraction
+    """
+    Extract job description text after boilerplate has been stripped.
+    Stitches sibling containers to handle split descriptions.
+    """
+    # Strip boilerplate BEFORE looking for description containers
     _strip_ui_boilerplate(soup)
 
+    # ── Primary: find the main description container ───────────────────
+    main_container: Tag | None = None
     for selector in _DESCRIPTION_SELECTORS:
-        element = soup.find(attrs=selector)
-        if element:
-            text = element.get_text(separator="\n", strip=True)
-            if len(text.split()) >= MIN_DESCRIPTION_WORDS:
-                return text
+        el = soup.find(attrs=selector)
+        if el and _word_count(el) >= MIN_DESCRIPTION_WORDS:
+            main_container = el
+            break
 
-    candidates = soup.find_all(["div", "section", "article"])
-    if candidates:
-        best = max(
-            candidates,
-            key=lambda el: len(el.get_text(strip=True)),
-        )
-        text = best.get_text(separator="\n", strip=True)
-        if len(text.split()) >= MIN_DESCRIPTION_WORDS:
-            return text
+    if main_container is None:
+        # Fallback: largest content block
+        candidates = soup.find_all(["div", "section", "article"])
+        if candidates:
+            best = max(candidates, key=_word_count)
+            if _word_count(best) >= MIN_DESCRIPTION_WORDS:
+                main_container = best
 
-    return None
+    if main_container is None:
+        return None
+
+    # ── Sibling stitching: collect adjacent content blocks ─────────────
+    text_parts = [main_container.get_text(separator="\n", strip=True)]
+    for sibling in main_container.find_next_siblings(["div", "section"]):
+        sibling_text = sibling.get_text(separator="\n", strip=True)
+        words = len(sibling_text.split())
+        
+        # Stop at navigation or very long structural blocks
+        if words < 20 or words > 800:
+            break
+            
+        # Ensure class attribute is a list for checking
+        sibling_classes_attr = sibling.get("class", [])
+        if not isinstance(sibling_classes_attr, list):
+            sibling_classes_attr = [sibling_classes_attr]
+        sibling_classes = " ".join(str(c) for c in sibling_classes_attr).lower()
+
+        # Don't include obvious UI siblings
+        if any(f in sibling_classes for f in ("similar", "related", "alert", "modal")):
+            break
+            
+        text_parts.append(sibling_text)
+
+    full_text = "\n\n".join(text_parts).strip()
+    
+    if len(full_text.split()) < MIN_DESCRIPTION_WORDS:
+        return None
+        
+    return full_text
 
 
 def _fetch_without_js_redirect(url: str, timeout: float) -> httpx.Response | None:
