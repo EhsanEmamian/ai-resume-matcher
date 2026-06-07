@@ -233,7 +233,7 @@ ADZUNA_APP_KEY=your_adzuna_key
 ADZUNA_BASE_URL=https://api.adzuna.com/v1/api/jobs
 ```
 
-> **Note:** The Anthropic API key is required for AI parsing. If omitted, resume upload returns a clear error. The Adzuna key is required for live job search. All other features (saved jobs, matching, demo seed) work without external keys.
+> **Note:** The Anthropic API key is required for AI parsing. If omitted, resume upload returns a clear error. The Adzuna key is required for live job search. All other features (saved jobs, matching, demo seed) work without external keys. Set ADMIN_API_KEY to any strong random string in production to protect job management endpoints.
 
 ### 3. Start the application
 

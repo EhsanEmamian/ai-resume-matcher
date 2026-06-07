@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     JOOBLE_API_KEY: str = ""
     JOOBLE_BASE_URL: str = "https://jooble.org/api"
 
+    ADMIN_API_KEY: str = ""
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

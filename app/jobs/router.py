@@ -4,6 +4,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.admin_guard import require_admin_key
 from app.database import get_db
 from app.exceptions import NotFoundError
 from app.jobs import ingestion, service
@@ -77,6 +78,7 @@ def import_external_job(
 )
 def backfill_job_skills(
     db: Session = Depends(get_db),
+    _admin_key: None = Depends(require_admin_key),
 ) -> BackfillJobSkillsResult:
     result = service.backfill_job_skills(db)
     return BackfillJobSkillsResult(**result)
@@ -91,6 +93,7 @@ def backfill_job_skills(
 def clear_jobs_by_source(
     source: str = Query(..., description="Source name, e.g. adzuna or manual"),
     db: Session = Depends(get_db),
+    _admin_key: None = Depends(require_admin_key),
 ) -> ClearJobsBySourceResult:
     deleted = service.clear_jobs_by_source(db, source=source)
     return ClearJobsBySourceResult(source=source, deleted=deleted)
@@ -105,6 +108,7 @@ def clear_jobs_by_source(
 def ingest_jobs(
     payload: IngestJobsRequest,
     db: Session = Depends(get_db),
+    _admin_key: None = Depends(require_admin_key),
 ) -> IngestJobsResult:
     summary = ingestion.ingest_adzuna_jobs(
         db=db,
@@ -162,7 +166,10 @@ def search_external_jobs(
     status_code=status.HTTP_200_OK,
     summary="Seed database with demo jobs for testing",
 )
-def seed_demo_jobs(db: Session = Depends(get_db)) -> SeedDemoResult:
+def seed_demo_jobs(
+    db: Session = Depends(get_db),
+    _admin_key: None = Depends(require_admin_key),
+) -> SeedDemoResult:
     created = 0
     skipped = 0
 
