@@ -48,6 +48,11 @@ ADZUNA_DOMAINS: frozenset[str] = frozenset({
     "www.adzuna.za", "adzuna.za",
 })
 
+BLOCKED_COMPANY_NAMES: frozenset[str] = frozenset({
+    "stepstone", "karriere.at", "karriere", "jobrapido", 
+    "jooble", "experteer", "monster", "indeed"
+})
+
 HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (X11; Linux x86_64) "
@@ -59,6 +64,11 @@ HEADERS = {
 class AdzunaClientError(AppError):
     def __init__(self, message: str, status_code: int = 502):
         super().__init__(message=message, status_code=status_code)
+
+
+def is_blocked_company(job: dict[str, Any]) -> bool:
+    name = (job.get("company") or {}).get("display_name", "").lower().strip()
+    return any(blocked in name for blocked in BLOCKED_COMPANY_NAMES)
 
 
 def _get_domain(url: str) -> str:
@@ -88,6 +98,10 @@ async def _probe_native_async(
     timeout: float
 ) -> tuple[dict[str, Any], bool]:
     """Returns (job, is_native) tuple."""
+    # ── اضافه شدن فیلتر لایه صفر ──
+    if is_blocked_company(job):
+        return job, False
+
     redirect_url = job.get("redirect_url", "")
     job_id = str(job.get("id", ""))
     

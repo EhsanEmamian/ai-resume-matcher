@@ -5,6 +5,7 @@ from httpx import Response
 
 from app.jobs.adzuna_client import (
     is_blocked_by_blocklist,
+    is_blocked_company,
     _probe_native_async,
     filter_native_async,
     run_async_filter_sync,
@@ -22,6 +23,19 @@ def test_is_blocked_by_blocklist_not_blocked() -> None:
     """Test is_blocked_by_blocklist returns False for non-blocked URLs."""
     assert is_blocked_by_blocklist("https://www.adzuna.at/details/123") is False
     assert is_blocked_by_blocklist("https://example.com/job/456") is False
+
+
+def test_is_blocked_company_stepstone() -> None:
+    """Test is_blocked_company returns True for a blocked company name."""
+    job = {"company": {"display_name": "StepStone GmbH"}}
+    assert is_blocked_company(job) is True
+
+
+def test_is_blocked_company_legitimate() -> None:
+    """Test is_blocked_company returns False for a legitimate company name."""
+    # Changed from 'Monster Energy GmbH' because 'monster' is in the blocklist
+    job = {"company": {"display_name": "Tech Corp GmbH"}}
+    assert is_blocked_company(job) is False
 
 
 @pytest.mark.asyncio
