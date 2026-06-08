@@ -9,6 +9,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.database import SessionLocal
+from app.jobs.enums import EnrichmentFailureReason, EnrichmentStatus
 from app.jobs.models import JobPosting
 from app.jobs.schemas import JobPostingCreate
 from app.jobs.source_enricher import fetch_source_text_result
@@ -185,7 +186,7 @@ def _normalize_remotive_job(item: dict[str, Any]) -> dict[str, Any]:
         "experience_requirement": extracted_experience,
         "salary_text": salary_text,
         "source_text": plain_text or None,
-        "enrichment_status": "success" if description else "not_attempted",
+        "enrichment_status": EnrichmentStatus.SUCCESS if description else EnrichmentStatus.NOT_ATTEMPTED,
         "enrichment_error": None,
         "enrichment_failure_reason": None,
         "enrichment_raw_html_length": len(raw_html) if raw_html else None,
@@ -337,7 +338,7 @@ def _prepare_immediate_import_payload(payload: dict) -> dict:
 
     if not immediate.get("enrichment_status"):
         immediate["enrichment_status"] = (
-            "processing" if immediate.get("source_url") else "pending"
+            EnrichmentStatus.PROCESSING if immediate.get("source_url") else EnrichmentStatus.PENDING
         )
 
     if immediate.get("salary_text"):
@@ -375,7 +376,7 @@ def enrich_job_background(job_id: uuid.UUID, payload: dict) -> None:
         db.rollback()
         job = db.get(JobPosting, job_id)
         if job is not None:
-            job.enrichment_status = "failed"
+            job.enrichment_status = EnrichmentStatus.FAILED
             job.enrichment_error = "Background enrichment failed unexpectedly."
             db.commit()
     finally:
@@ -392,7 +393,7 @@ def _enrich_job_background(db: Session, job_id: uuid.UUID, payload: dict) -> Non
     source_url: str | None = payload.get("source_url", job.source_url)
 
     source_text: str | None = None
-    enrichment_status: str = "not_attempted"
+    enrichment_status: str = EnrichmentStatus.NOT_ATTEMPTED
     enrichment_error: str | None = None
     enrichment_failure_reason: str | None = None
     enrichment_result = None
@@ -403,11 +404,11 @@ def _enrich_job_background(db: Session, job_id: uuid.UUID, payload: dict) -> Non
             source=payload.get("source", job.source) or "unknown",
             source_id=payload.get("source_id", job.source_id),
         )
-        if enrichment_result.failure_reason == "redirect_interstitial":
+        if enrichment_result.failure_reason == EnrichmentFailureReason.REDIRECT_INTERSTITIAL:
             source_text = description
-            enrichment_status = "success"
+            enrichment_status = EnrichmentStatus.SUCCESS
             enrichment_error = None
-            enrichment_failure_reason = "redirect_fallback"
+            enrichment_failure_reason = EnrichmentFailureReason.REDIRECT_FALLBACK
             logger.info(
                 "job_id=%s: redirect interstitial detected — falling back to preview text",
                 job_id,
@@ -418,7 +419,7 @@ def _enrich_job_background(db: Session, job_id: uuid.UUID, payload: dict) -> Non
             enrichment_error = enrichment_result.error
             enrichment_failure_reason = enrichment_result.failure_reason
     else:
-        enrichment_failure_reason = "no_url"
+        enrichment_failure_reason = EnrichmentFailureReason.NO_URL
 
     extraction_text: str = source_text or description
 
@@ -448,7 +449,7 @@ def _enrich_job_background(db: Session, job_id: uuid.UUID, payload: dict) -> Non
 
     # Diagnostic fields — for redirect_fallback we derive counts from the
     # fallback text itself rather than from the (failed) HTTP response.
-    if enrichment_failure_reason == "redirect_fallback":
+    if enrichment_failure_reason == EnrichmentFailureReason.REDIRECT_FALLBACK:
         job.enrichment_text_word_count = len(source_text.split()) if source_text else 0
         job.enrichment_text_preview = source_text[:200] if source_text else None
     elif enrichment_result is not None:

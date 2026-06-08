@@ -7,6 +7,8 @@ from urllib.parse import urlparse
 import httpx
 from bs4 import BeautifulSoup, Tag
 
+from app.jobs.enums import EnrichmentStatus
+
 logger = logging.getLogger(__name__)
 
 HEADERS = {
@@ -232,9 +234,9 @@ def fetch_adzuna_native_description(
         (description_text, status)
 
         status values:
-            "success"       — extracted full description from Adzuna page
-            "too_short"     — fetched OK but not enough text
-            "fetch_failed"  — both URLs failed to load
+            EnrichmentStatus.SUCCESS       — extracted full description from Adzuna page
+            EnrichmentStatus.FAILED         — both URLs failed to load
+            EnrichmentStatus.PARTIAL        — fetched OK but not enough text
     """
     canonical_url = _build_native_url(redirect_url, job_id)
 
@@ -261,7 +263,7 @@ def fetch_adzuna_native_description(
                 len(description.split()),
                 url,
             )
-            return description, "success"
+            return description, EnrichmentStatus.SUCCESS
 
         logger.debug("Page fetched but description too short: %s", url)
 
@@ -271,5 +273,5 @@ def fetch_adzuna_native_description(
             BeautifulSoup(last_response.text, "html.parser").get_text().split()
         )
 
-    status = "too_short" if word_count > 0 else "fetch_failed"
+    status = EnrichmentStatus.PARTIAL if word_count > 0 else EnrichmentStatus.FAILED
     return None, status

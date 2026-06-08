@@ -8,6 +8,7 @@ import httpx
 from bs4 import BeautifulSoup, Tag
 
 from app.jobs.adzuna_native_fetcher import fetch_adzuna_native_description
+from app.jobs.enums import EnrichmentFailureReason, EnrichmentStatus
 from app.jobs.url_extractor import DEFAULT_HEADERS, DEFAULT_TIMEOUT, resolve_redirect_url
 from app.jobs.zenrows_client import fetch_via_zenrows
 
@@ -97,9 +98,9 @@ def _redirect_interstitial_result(
     text_preview: str | None = None,
 ) -> SourceEnrichmentResult:
     return SourceEnrichmentResult(
-        status="failed",
+        status=EnrichmentStatus.FAILED,
         text=None,
-        failure_reason="redirect_interstitial",
+        failure_reason=EnrichmentFailureReason.REDIRECT_INTERSTITIAL,
         error=error,
         raw_html_length=raw_html_length,
         text_word_count=text_word_count,
@@ -138,9 +139,9 @@ def _evaluate_html(raw_html: str) -> SourceEnrichmentResult:
 
     if raw_html_length < 500:
         return SourceEnrichmentResult(
-            status="failed",
+            status=EnrichmentStatus.FAILED,
             text=None,
-            failure_reason="too_short_response",
+            failure_reason=EnrichmentFailureReason.TOO_SHORT_RESPONSE,
             error=f"HTML too short: {raw_html_length} chars",
             raw_html_length=raw_html_length,
             text_word_count=text_word_count,
@@ -157,9 +158,9 @@ def _evaluate_html(raw_html: str) -> SourceEnrichmentResult:
 
     if text_word_count < 80:
         return SourceEnrichmentResult(
-            status="partial",
+            status=EnrichmentStatus.PARTIAL,
             text=None,
-            failure_reason="too_short_text",
+            failure_reason=EnrichmentFailureReason.TOO_SHORT_TEXT,
             error=f"Extracted text too short: {text_word_count} words",
             raw_html_length=raw_html_length,
             text_word_count=text_word_count,
@@ -177,9 +178,9 @@ def _evaluate_html(raw_html: str) -> SourceEnrichmentResult:
 
     if any(indicator in lower_html for indicator in js_indicators) and text_word_count < 200:
         return SourceEnrichmentResult(
-            status="failed",
+            status=EnrichmentStatus.FAILED,
             text=None,
-            failure_reason="js_rendered",
+            failure_reason=EnrichmentFailureReason.JS_RENDERED,
             error="Likely JavaScript-rendered page shell",
             raw_html_length=raw_html_length,
             text_word_count=text_word_count,
@@ -187,7 +188,7 @@ def _evaluate_html(raw_html: str) -> SourceEnrichmentResult:
         )
 
     return SourceEnrichmentResult(
-        status="success",
+        status=EnrichmentStatus.SUCCESS,
         text=stripped,
         failure_reason=None,
         error=None,
@@ -201,7 +202,7 @@ def _success_from_plain_text(text: str) -> SourceEnrichmentResult:
     normalized = _normalize_extracted_text(text)
     word_count = len(normalized.split())
     return SourceEnrichmentResult(
-        status="success",
+        status=EnrichmentStatus.SUCCESS,
         text=normalized,
         failure_reason=None,
         error=None,
@@ -221,25 +222,25 @@ def _generic_fetch_and_extract(source_url: str) -> SourceEnrichmentResult:
 
     if resolve_status == "timeout":
         return SourceEnrichmentResult(
-            status="failed",
+            status=EnrichmentStatus.FAILED,
             text=None,
-            failure_reason="timeout",
+            failure_reason=EnrichmentFailureReason.TIMEOUT,
             error="Timed out while resolving source URL",
         )
 
     if resolve_status == "blocked":
         return SourceEnrichmentResult(
-            status="failed",
+            status=EnrichmentStatus.FAILED,
             text=None,
-            failure_reason="blocked",
+            failure_reason=EnrichmentFailureReason.BLOCKED,
             error="Blocked while resolving source URL",
         )
 
     if resolve_status == "fetch_failed":
         return SourceEnrichmentResult(
-            status="failed",
+            status=EnrichmentStatus.FAILED,
             text=None,
-            failure_reason="fetch_failed",
+            failure_reason=EnrichmentFailureReason.FETCH_FAILED,
             error="Failed to resolve source URL",
         )
 
@@ -281,9 +282,9 @@ def _generic_fetch_and_extract(source_url: str) -> SourceEnrichmentResult:
 
         failure_reason = fetch_error.split(":", 1)[0]
         return SourceEnrichmentResult(
-            status="failed",
+            status=EnrichmentStatus.FAILED,
             text=None,
-            failure_reason=failure_reason,
+            failure_reason=EnrichmentFailureReason(failure_reason),
             error=fetch_error.split(":", 1)[-1],
         )
 
@@ -298,9 +299,9 @@ def fetch_source_text_result(
 ) -> SourceEnrichmentResult:
     if not url:
         return SourceEnrichmentResult(
-            status="not_attempted",
+            status=EnrichmentStatus.NOT_ATTEMPTED,
             text=None,
-            failure_reason="no_url",
+            failure_reason=EnrichmentFailureReason.NO_URL,
             error=None,
         )
 
@@ -309,7 +310,7 @@ def fetch_source_text_result(
             job_id=source_id,
             redirect_url=url,
         )
-        if native_status == "success" and description:
+        if native_status == EnrichmentStatus.SUCCESS and description:
             return _success_from_plain_text(description)
 
         logger.info(
