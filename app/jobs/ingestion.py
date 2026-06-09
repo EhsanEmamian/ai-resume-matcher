@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import logging
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -10,6 +11,9 @@ from app.jobs.skill_extractor import (
     extract_skills_from_text,
     normalize_salary_text_for_storage,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -78,6 +82,7 @@ def ingest_adzuna_jobs(
             db.rollback()
             skipped += 1
         except Exception:
+            logger.exception("Failed to ingest job: %s", job_data.get("source_id"))
             db.rollback()
             errors += 1
 

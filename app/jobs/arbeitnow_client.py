@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import html
+import logging
 import re
 from datetime import datetime, timezone
 
@@ -16,6 +17,8 @@ from app.jobs.skill_extractor import (
     extract_skills_from_text,
 )
 
+logger = logging.getLogger(__name__)
+
 ARBEITNOW_API_URL = "https://www.arbeitnow.com/api/job-board-api"
 
 
@@ -26,6 +29,7 @@ def _parse_posted_at(value: str | None) -> datetime | None:
     try:
         return datetime.fromisoformat(value.replace("Z", "+00:00"))
     except Exception:
+        logger.exception("Failed to parse posted_at date: %s", value)
         return None
 
 

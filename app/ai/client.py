@@ -1,6 +1,11 @@
+import logging
+
 from anthropic import Anthropic
 
 from app.config import settings
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_anthropic_client() -> Anthropic:

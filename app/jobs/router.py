@@ -1,4 +1,5 @@
 import uuid
+import logging
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
 from sqlalchemy import select
@@ -26,6 +27,8 @@ from app.jobs.schemas import (
     JobPostingRead,
     SeedDemoResult,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 

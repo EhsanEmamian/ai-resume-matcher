@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import gc
+import logging
 import shutil
 import uuid
 from datetime import datetime, time, timezone
@@ -20,6 +21,8 @@ from app.resume.pdf_extractor import (
 )
 from app.resume.text_utils import normalize_resume_text
 from app.resume.validation import validate_resume_document
+
+logger = logging.getLogger(__name__)
 
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -260,6 +263,11 @@ def parse_resume_profile(db: Session, resume_id: uuid.UUID) -> ResumeProfile:
         db.refresh(resume)
 
         if not validation.is_resume:
+            logger.info(
+                "Document rejected: type=%s confidence=%.2f",
+                validation.document_type,
+                validation.confidence,
+            )
             raise ResumeDocumentRejectedError(
                 validation.rejection_reason
                 or "This document does not look like a resume or CV. Please upload a valid resume PDF.",
@@ -284,6 +292,14 @@ def parse_resume_profile(db: Session, resume_id: uuid.UUID) -> ResumeProfile:
     db.add(profile)
     db.commit()
     db.refresh(profile)
+    
+    logger.info(
+        "Resume parsed: id=%s skills=%d roles=%d",
+        resume.id,
+        len(profile.skills),
+        len(profile.suggested_roles),
+    )
+    
     return profile
 
 

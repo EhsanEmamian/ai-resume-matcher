@@ -5,6 +5,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
 from app.config import settings
+from app.core.logging_config import setup_logging
 from app.core.limiter import limiter
 from app.exceptions import AppError
 from app.jobs.router import router as jobs_router
@@ -13,6 +14,8 @@ from app.resume.router import router as resume_router
 
 
 def create_app() -> FastAPI:
+    setup_logging(settings.DEBUG)
+    
     app = FastAPI(
         title=settings.APP_NAME,
         version=settings.APP_VERSION,

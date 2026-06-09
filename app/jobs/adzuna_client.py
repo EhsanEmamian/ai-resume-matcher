@@ -75,6 +75,7 @@ def _get_domain(url: str) -> str:
     try:
         return urlparse(url).netloc.lower()
     except Exception:
+        logger.exception("Failed to parse domain from URL: %s", url)
         return ""
 
 
@@ -118,6 +119,7 @@ async def _probe_native_async(
         final_domain = _get_domain(str(response.url))
         return job, _is_adzuna_domain(final_domain)
     except Exception:
+        logger.exception("Failed to probe redirect URL: %s", redirect_url)
         # Fallback: check /details/ endpoint
         try:
             parsed = urlparse(redirect_url)
@@ -125,6 +127,7 @@ async def _probe_native_async(
             r = await client.head(details_url, follow_redirects=False)
             return job, r.status_code == 200
         except Exception:
+            logger.exception("Failed to probe details endpoint for job_id=%s", job_id)
             return job, False
 
 

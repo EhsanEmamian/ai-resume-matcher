@@ -1,4 +1,5 @@
 import uuid
+import logging
 from datetime import datetime, timezone
 
 from sqlalchemy import select
@@ -14,6 +15,8 @@ from app.matching.scorer import (
     calculate_match,
 )
 from app.resume.models import Resume, ResumeProfile
+
+logger = logging.getLogger(__name__)
 
 PREVIEW_RESUME_ID = uuid.UUID(int=0)
 REASON_MAX_LENGTH = 500
@@ -127,7 +130,15 @@ def generate_matches_for_resume(db: Session, resume_id: uuid.UUID) -> list[Match
         .where(MatchResult.resume_id == resume_id)
         .order_by(MatchResult.score.desc(), MatchResult.matched_at.desc())
     )
-    return list(db.scalars(stmt).all())
+    matches = list(db.scalars(stmt).all())
+    
+    logger.info(
+        "Matches generated: resume=%s count=%d",
+        resume_id,
+        len(matches),
+    )
+    
+    return matches
 
 
 def list_matches_for_resume(

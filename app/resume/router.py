@@ -1,4 +1,5 @@
 import uuid
+import logging
 
 from fastapi import (
     APIRouter,
@@ -35,6 +36,8 @@ from app.resume.schemas import (
     ResumeUploadAndParseResponse,
     ResumeUploadResponse,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 

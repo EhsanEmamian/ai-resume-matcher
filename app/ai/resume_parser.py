@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 from typing import Literal
 
@@ -6,6 +7,9 @@ from pydantic import BaseModel, Field, ValidationError
 
 from app.ai.client import get_anthropic_client
 from app.config import settings
+
+
+logger = logging.getLogger(__name__)
 
 
 class ResumeParsingError(Exception):

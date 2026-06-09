@@ -1,10 +1,13 @@
 import json
+import logging
 from dataclasses import dataclass
 
 from app.ai.client import get_anthropic_client
 from app.ai.resume_parser import ResumeAIUnavailableError
 from app.config import settings
 
+
+logger = logging.getLogger(__name__)
 
 RESUME_POSITIVE_HINTS = [
     "experience",

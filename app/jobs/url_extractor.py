@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import logging
 import re
 from urllib.parse import urljoin
 
 import httpx
 from bs4 import BeautifulSoup
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_TIMEOUT = 15.0
 DEFAULT_HEADERS = {
@@ -145,6 +148,7 @@ def resolve_redirect_url(url: str) -> tuple[str, str]:
     except httpx.TimeoutException:
         return url, "timeout"
     except Exception:
+        logger.exception("Failed to resolve redirect URL: %s", url)
         return url, "fetch_failed"
 
     if response.status_code in {401, 403}:
